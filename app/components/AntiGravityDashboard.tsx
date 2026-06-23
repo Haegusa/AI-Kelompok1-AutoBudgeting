@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import type { User } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
 import { DM_Sans, Space_Mono } from 'next/font/google';
 
 const dmSans = DM_Sans({ subsets: ['latin'] });
@@ -28,7 +30,7 @@ const NAV_ITEMS = [
 ];
 
 /* ─────────────────────────────────────────── */
-export default function BinusianMonthlyBudgeting() {
+export default function BinusianMonthlyBudgeting({ user }: { user?: User | null }) {
 
   const [activeTab,        setActiveTab]        = useState('DASHBOARD');
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
@@ -367,6 +369,33 @@ export default function BinusianMonthlyBudgeting() {
           <span style={{ width:6, height:6, borderRadius:'50%', background:'#10b981', display:'inline-block', boxShadow:'0 0 6px #10b981' }} />
           <span className={spaceMono.className} style={{ letterSpacing:'0.1em' }}>LIVE</span>
         </div>
+
+        {/* User avatar + logout */}
+        {user && (
+          <div style={{ display:'flex', alignItems:'center', gap:8, marginLeft:8 }}>
+            {user.user_metadata?.avatar_url && (
+              <img
+                src={user.user_metadata.avatar_url}
+                alt="avatar"
+                style={{ width:26, height:26, borderRadius:'50%', border:'1px solid rgba(0,212,255,0.3)' }}
+              />
+            )}
+            <span style={{ fontSize:10, color:'#475569', maxWidth:100, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+              {user.user_metadata?.full_name || user.email}
+            </span>
+            <button
+              onClick={() => supabase.auth.signOut()}
+              style={{
+                fontSize:9, padding:'3px 10px',
+                background:'transparent', border:'1px solid rgba(239,68,68,0.3)',
+                color:'#ef4444', borderRadius:4, cursor:'pointer',
+                letterSpacing:'0.08em', transition:'all 0.15s',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='rgba(239,68,68,0.1)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='transparent'; }}
+            >LOGOUT</button>
+          </div>
+        )}
       </nav>
 
       {/* ── MAIN CONTENT ── */}
