@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Binusian-MonthlyBudgeting · Sub-Pages</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+
+<style>
+/* ==============================================
+   TOKENS
+=============================================== */
+:root {
+  --bg:         #0A0A0C;
+  --surface:    #111116;
+  --surface2:   #18181F;
+  --surface3:   #1F1F28;
+  --border:     #2A2A35;
+  --border-hi:  #383848;
+
+  --teal:       #00FFB3;
+  --teal-dim:   rgba(0,255,179,0.08);
+  --teal-dim2:  rgba(0,255,179,0.14);
+  --violet:     #7B61FF;
+  --violet-dim: rgba(123,97,255,0.10);
+  --coral:      #FF6B6B;
+  --coral-dim:  rgba(255,107,107,0.10);
+  --amber:      #FFBE0B;
+  --amber-dim:  rgba(255,190,11,0.10);
+
+  --text-1: #F0F0F6;
+  --text-2: #A0A0B8;
+  --text-3: #55556A;
+  --text-4: #3A3A50;
+
+  --font-head: 'Syne', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+}
+
+/* ==============================================
+   RESET
+=============================================== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text-1);
+  font-family: var(--font-mono);
+  min-height: 100%;
+  overflow-x: hidden;
+}
+button { cursor: pointer; font-family: inherit; }
+input, select, textarea { font-family: var(--font-mono); }
+
+/* CRT overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 2px,
+    rgba(0,0,0,0.055) 2px, rgba(0,0,0,0.055) 4px
+  );
+}
+
+/* scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border-hi); }
+
+/* ==============================================
+   SHARED UTILITIES
+=============================================== */
+.label-xs {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.label-sm {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.heading { font-family: var(--font-head); font-weight: 800; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid;
+}
+.chip-teal   { color: var(--teal);   border-color: var(--teal);   background: var(--teal-dim); }
+.chip-coral  { color: var(--coral);  border-color: var(--coral);  background: var(--coral-dim); }
+.chip-violet { color: var(--violet); border-color: var(--violet); background: var(--violet-dim); }
+.chip-amber  { color: var(--amber);  border-color: var(--amber);  background: var(--amber-dim); }
+.chip-grey   { color: var(--text-2); border-color: var(--border); background: var(--surface2); }
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0 16px;
+}
+.divider-line { flex: 1; height: 1px; background: var(--border); }
+.divider-text { font-size: 9px; letter-spacing: 0.16em; color: var(--text-3); text-transform: uppercase; white-space: nowrap; }
+
+/* fade in */
+.fade { animation: fadein 0.35s ease both; }
+@keyframes fadein { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+/* ==============================================
+   NAVBAR
+=============================================== */
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 54px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: rgba(10,10,12,0.97);
+  backdrop-filter: blur(14px);
+  z-index: 500;
+  gap: 16px;
+}
+
+.nav-back {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  transition: color 0.2s, border-color 0.2s;
+}
+.nav-back:hover { color: var(--teal); border-color: var(--teal); }
+
+.nav-logo-text {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--teal);
+  white-space: nowrap;
+}
+
+.pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--teal);
+  animation: pulse 1.8s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes pulse {
+  0%,100% { opacity:1; box-shadow: 0 0 0 0 rgba(0,255,179,0.6); }
+  50%      { opacity:0.55; box-shadow: 0 0 0 7px rgba(0,255,179,0); }
+}
+
+.nav-tabs {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.nav-tab {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  padding: 6px 18px;
+  background: none;
+  border: 1px solid transparent;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.nav-tab:hover { color: var(--text-1); border-color: var(--border-hi); }
+.nav-tab.active {
+  color: var(--teal);
+  border-color: var(--teal);
+  background: var(--teal-dim);
+}
+
+.nav-clock {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-3);
+  border: 1px solid var(--border);
+  padding: 4px 12px;
+  background: var(--surface);
+  white-space: nowrap;
+}
+.clock-time { color: var(--text-1); font-weight: 700; }
+
+/* ==============================================
+   PAGE WRAPPER
+=============================================== */
+.wrapper {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 28px 24px 80px;
+}
+
+/* page visibility */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ==============================================
+   =========  PAGE 1: HISTORY  =========
+=============================================== */
+
+/* Filter chips bar */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.filter-chip {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 5px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  transition: all 0.18s;
+}
+.filter-chip:hover { border-color: var(--border-hi); color: var(--text-1); }
+.filter-chip.active-all      { border-color: var(--text-2); color: var(--text-1); background: var(--surface2); }
+.filter-chip.active-income   { border-color: var(--teal);   color: var(--teal);   background: var(--teal-dim); }
+.filter-chip.active-equip    { border-color: var(--amber);  color: var(--amber);  background: var(--amber-dim); }
+.filter-chip.active-paylater { border-color: var(--coral);  color: var(--coral);  background: var(--coral-dim); }
+.filter-chip.active-invest   { border-color: var(--violet); color: var(--violet); background: var(--violet-dim); }
+
+/* Month group header */
+.month-group-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 24px 0 10px;
+}
+.month-group-header .month-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--teal);
+  border: 1px solid var(--teal);
+  background: var(--teal-dim);
+  padding: 3px 10px;
+}
+.month-group-header .month-line { flex: 1; height: 1px; background: var(--border); }
+.month-group-header .month-count { font-size: 9px; color: var(--text-4); letter-spacing: 0.1em; text-transform: uppercase; }
+
+/* Transaction row */
+.trx-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px 14px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  margin-bottom: 6px;
+  transition: background 0.18s, border-color 0.18s, padding-left 0.18s;
+  position: relative;
+}
+.trx-row:hover {
+  background: var(--surface2);
+  border-color: var(--border-hi);
+  padding-left: 20px;
+}
+.trx-row[data-hidden="true"] { display: none; }
+
+/* Date block */
+.trx-date {
+  flex-shrink: 0;
+  width: 52px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  text-align: center;
+  padding: 6px 4px;
+}
+.trx-date-month { font-size: 8px; letter-spacing: 0.14em; color: var(--text-3); text-transform: uppercase; }
+.trx-date-day   { font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--text-1); line-height: 1.1; }
+
+/* Transaction info */
+.trx-info { flex: 1; min-width: 0; }
+.trx-name {
+  font-family: var(--font-head);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 5px;
+}
+.trx-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.trx-time { font-size: 9px; color: var(--text-3); letter-spacing: 0.08em; }
+.trx-cat-badge {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border: 1px solid;
+}
+.trx-source { font-size: 9px; color: var(--text-4); letter-spacing: 0.06em; }
+
+/* Amount block */
+.trx-amount { flex-shrink: 0; text-align: right; }
+.trx-nominal {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.trx-type-label { font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; margin-top: 3px; color: var(--text-3); }
+
+/* Edit button */
+.trx-edit {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-3);
+  font-size: 13px;
+  transition: color 0.18s, border-color 0.18s, background 0.18s;
+}
+.trx-edit:hover { color: var(--amber); border-color: var(--amber); background: var(--amber-dim); }
+
+/* Category colors */
+.cat-income   { color: var(--teal);   border-color: var(--teal);   background: var(--teal-dim); }
+.cat-equip    { color: var(--amber);  border-color: var(--amber);  background: var(--amber-dim); }
+.cat-paylater { color: var(--coral);  border-color: var(--coral);  background: var(--coral-dim); }
+.cat-invest   { color: var(--violet); border-color: var(--violet); background: var(--violet-dim); }
+.cat-other    { color: var(--text-2); border-color: var(--border); background: var(--surface2); }
+
+/* Nominal colors */
+.nom-income { color: var(--teal); }
+.nom-debt   { color: var(--coral); }
+.nom-debit  { color: var(--text-1); }
+
+/* ==============================================
+   =========  PAGE 2: ANALYTICS  =========
+=============================================== */
+
+/* AI Header card */
+.ai-header-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--violet);
+  padding: 28px;
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.ai-avatar {
+  width: 64px;
+  height: 64px;
+  background: var(--violet-dim);
+  border: 1px solid var(--violet);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  flex-shrink: 0;
+}
+.ai-header-title {
+  font-family: var(--font-head);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-1);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.ai-header-sub { font-size: 11px; color: var(--text-3); letter-spacing: 0.08em; margin-bottom: 12px; }
+.ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--violet);
+  border: 1px solid var(--violet);
+  background: var(--violet-dim);
+  padding: 3px 10px;
+}
+
+/* Section block */
+.ai-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 24px;
+  margin-bottom: 14px;
+  transition: border-color 0.2s;
+}
+.ai-section:hover { border-color: var(--border-hi); }
+
+.ai-section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.ai-section-emoji { font-size: 20px; }
+.ai-section-title {
+  font-family: var(--font-head);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-1);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.ai-body {
+  font-size: 12px;
+  line-height: 1.85;
+  color: var(--text-2);
+}
+.ai-body p { margin-bottom: 10px; }
+.ai-body p:last-child { margin-bottom: 0; }
+.hi-t { color: var(--teal);   font-family: var(--font-mono); font-weight: 700; }
+.hi-c { color: var(--coral);  font-family: var(--font-mono); font-weight: 700; }
+.hi-a { color: var(--amber);  font-family: var(--font-mono); font-weight: 700; }
+.hi-v { color: var(--violet); font-family: var(--font-mono); font-weight: 700; }
+
+/* 2-col micro grid for Micro Assessment */
+.micro-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+.micro-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 14px;
+  border-left: 3px solid;
+}
+.micro-card-label { font-size: 9px; letter-spacing: 0.14em; color: var(--text-3); text-transform: uppercase; margin-bottom: 5px; }
+.micro-card-title { font-family: var(--font-head); font-size: 13px; font-weight: 700; color: var(--text-1); margin-bottom: 5px; }
+.micro-card-body  { font-size: 11px; color: var(--text-3); line-height: 1.7; }
+
+/* Numbered step list */
+.step-list { display: flex; flex-direction: column; gap: 18px; }
+.step-item { display: flex; gap: 16px; }
+.step-num {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--teal);
+  flex-shrink: 0;
+  width: 28px;
+}
+.step-name {
+  font-family: var(--font-head);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-1);
+  margin-bottom: 5px;
+}
+.step-desc { font-size: 11px; color: var(--text-3); line-height: 1.75; }
+
+/* Verdict box */
+.verdict-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--violet);
+  padding: 20px 24px;
+  margin-top: 14px;
+}
+.verdict-text {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-2);
+  line-height: 1.8;
+}
+.verdict-text::before { content: '"'; color: var(--violet); font-size: 20px; font-style: normal; }
+.verdict-text::after  { content: '"'; color: var(--violet); font-size: 20px; font-style: normal; }
+
+/* ==============================================
+   =========  PAGE 3: PROFILE & FORM  =========
+=============================================== */
+
+/* 2-col card grid */
+.profile-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+/* Profile card */
+.profile-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--violet);
+  padding: 24px;
+}
+.profile-avatar-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.profile-avatar {
+  width: 60px;
+  height: 60px;
+  background: var(--violet-dim);
+  border: 1px solid var(--violet);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  flex-shrink: 0;
+}
+.profile-fullname {
+  font-family: var(--font-head);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-1);
+  margin-bottom: 2px;
+}
+.profile-nickname {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--teal);
+  margin-bottom: 4px;
+}
+.profile-data-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+.profile-data-row:last-of-type { border-bottom: none; }
+.profile-data-key { font-size: 9px; letter-spacing: 0.12em; color: var(--text-3); text-transform: uppercase; flex-shrink: 0; }
+.profile-data-val { font-size: 11px; color: var(--text-1); text-align: right; word-break: break-all; }
+
+.btn-edit-profile {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--teal);
+  background: none;
+  border: 1px solid var(--teal);
+  padding: 8px 16px;
+  transition: background 0.18s;
+  width: 100%;
+  justify-content: center;
+}
+.btn-edit-profile:hover { background: var(--teal-dim2); }
+
+/* Security card */
+.security-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--teal);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+.sec-shield { font-size: 44px; text-align: center; margin-bottom: 8px; }
+.sec-pct {
+  font-family: var(--font-mono);
+  font-size: 40px;
+  font-weight: 700;
+  color: var(--teal);
+  text-align: center;
+  margin-bottom: 4px;
+  line-height: 1;
+}
+.sec-status-text {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-2);
+  letter-spacing: 0.08em;
+  margin-bottom: 16px;
+}
+.sec-bar-track {
+  height: 4px;
+  background: var(--border);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+.sec-bar-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, var(--teal), #00FFD0);
+}
+.sec-items { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.sec-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+}
+.sec-item-icon { color: var(--teal); font-size: 14px; flex-shrink: 0; }
+.sec-item-label { font-size: 10px; color: var(--text-2); letter-spacing: 0.08em; flex: 1; }
+.sec-item-badge {
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--teal);
+  border: 1px solid var(--teal);
+  padding: 2px 7px;
+  background: var(--teal-dim);
+}
+.sec-link {
+  display: block;
+  margin-top: 16px;
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  text-decoration: none;
+  transition: color 0.18s;
+}
+.sec-link:hover { color: var(--teal); }
+
+/* ============  TRANSACTION FORM  ============ */
+.form-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--amber);
+  padding: 28px;
+}
+
+/* Type toggle */
+.type-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px;
+  margin-bottom: 24px;
+  background: var(--surface2);
+  padding: 4px;
+  border: 1px solid var(--border);
+}
+.type-btn {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 10px;
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-3);
+  transition: all 0.18s;
+  text-align: center;
+}
+.type-btn:hover { color: var(--text-1); }
+.type-btn.active-pengeluaran { background: var(--amber-dim);  border-color: var(--amber);  color: var(--amber); }
+.type-btn.active-utang       { background: var(--coral-dim);  border-color: var(--coral);  color: var(--coral); }
+.type-btn.active-pendapatan  { background: var(--teal-dim);   border-color: var(--teal);   color: var(--teal); }
+
+/* Amount display */
+.amount-display {
+  text-align: center;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+}
+.amount-prefix {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-3);
+  letter-spacing: 0.12em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+.amount-value {
+  font-family: var(--font-mono);
+  font-size: 42px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  transition: color 0.2s;
+  min-height: 50px;
+  word-break: break-all;
+}
+.amount-value.col-amber  { color: var(--amber); }
+.amount-value.col-coral  { color: var(--coral); }
+.amount-value.col-teal   { color: var(--teal); }
+
+/* Numpad */
+.numpad {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+.num-btn {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  padding: 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-1);
+  text-align: center;
+  transition: background 0.15s, border-color 0.15s;
+  user-select: none;
+}
+.num-btn:hover  { background: var(--surface3); border-color: var(--border-hi); }
+.num-btn:active { background: var(--border); }
+.num-btn.del-btn { color: var(--coral); }
+.num-btn.zero-wide { /* just a regular cell now */ }
+
+/* 2-col field row */
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.field-group label {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 7px;
+}
+.field-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-1);
+  padding: 11px 14px;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.18s;
+}
+.field-input:focus { border-color: var(--amber); }
+.field-input::placeholder { color: var(--text-4); }
+.field-select {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-1);
+  padding: 11px 14px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.18s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2355556A' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+.field-select:focus { border-color: var(--amber); }
+.field-select option { background: var(--surface2); }
+
+/* CTA button */
+.btn-cta {
+  width: 100%;
+  padding: 16px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--amber);
+  color: #000;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: opacity 0.2s, transform 0.1s;
+}
+.btn-cta:hover  { opacity: 0.88; }
+.btn-cta:active { transform: scale(0.99); }
+
+/* ==============================================
+   TICKER FOOTER
+=============================================== */
+.ticker-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 34px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  z-index: 600;
+}
+.ticker-label {
+  flex-shrink: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--teal);
+  text-transform: uppercase;
+  background: var(--teal-dim);
+  border-right: 1px solid var(--teal);
+}
+.ticker-track { flex: 1; overflow: hidden; height: 100%; display: flex; align-items: center; }
+.ticker-inner {
+  display: flex;
+  white-space: nowrap;
+  animation: ticker 28s linear infinite;
+}
+@keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 24px;
+  font-size: 10px;
+  color: var(--text-2);
+  border-right: 1px solid var(--border);
+}
+.t-key { color: var(--text-3); }
+.t-pos { color: var(--teal);  font-weight: 700; }
+.t-neg { color: var(--coral); font-weight: 700; }
+.t-wht { color: var(--text-1); font-weight: 700; }
+</style>
+</head>
+
+<body>
+
+<!-- =========================================================
+     SHARED NAVBAR
+========================================================= -->
+<nav>
+  <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+    <div class="pulse-dot"></div>
+    <span class="nav-logo-text">BMB::SUB-PAGES</span>
+  </div>
+
+  <button class="nav-back" onclick="window.location.href='dashboard-prototype.html'">← Dashboard</button>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('history', this)">History</button>
+    <button class="nav-tab"        onclick="showPage('analytics', this)">Analytics</button>
+    <button class="nav-tab"        onclick="showPage('profile', this)">Profile &amp; Form</button>
+  </div>
+
+  <div class="nav-clock">
+    <span class="label-xs">SYS</span>
+    <span class="clock-time" id="clock">--:--:--</span>
+  </div>
+</nav>
+
+<!-- =========================================================
+     PAGE 1: HISTORY
+========================================================= -->
+<div id="page-history" class="page active">
+  <div class="wrapper">
+
+    <div class="divider" style="margin-top:0">
+      <div class="divider-line"></div>
+      <div class="divider-text">Transaction Log · All Periods</div>
+      <div class="divider-line"></div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <span class="label-xs" style="margin-right:4px;color:var(--text-4);">FILTER:</span>
+      <button class="filter-chip active-all"  data-filter="all"      onclick="filterTrx(this)">ALL</button>
+      <button class="filter-chip"             data-filter="INCOME"   onclick="filterTrx(this)">Income</button>
+      <button class="filter-chip"             data-filter="EQUIPMENT" onclick="filterTrx(this)">Equipment</button>
+      <button class="filter-chip"             data-filter="PAYLATER" onclick="filterTrx(this)">PayLater</button>
+      <button class="filter-chip"             data-filter="INVESTMENT" onclick="filterTrx(this)">Investment</button>
+    </div>
+
+    <!-- MAY 2026 -->
+    <div class="month-group-header" data-month-group>
+      <span class="month-badge">May 2026</span>
+      <div class="month-line"></div>
+      <span class="month-count">3 transaksi</span>
+    </div>
+
+    <div class="trx-row fade" data-cat="INCOME">
+      <div class="trx-date"><div class="trx-date-month">May</div><div class="trx-date-day">08</div></div>
+      <div class="trx-info">
+        <div class="trx-name">Dividen BBRI</div>
+        <div class="trx-meta">
+          <span class="trx-time">⌚ 09:50</span>
+          <span class="trx-cat-badge cat-income">INCOME</span>
+          <span class="trx-source">BCA Mobile</span>
+        </div>
+      </div>
+      <div class="trx-amount">
+        <div class="trx-nominal nom-income">+ Rp 209.000</div>
+        <div class="trx-type-label">PEMASUKAN</div>
+      </div>
+      <button class="trx-edit" title="Edit transaksi">✎</button>
+    </div>
+
+    <div class="trx-row fade" data-cat="INCOME">
+      <div class="trx-date"><div class="trx-date-month">May</div><div class="trx-date-day">07</div></div>
+      <div class="trx-info">
+        <div class="trx-name">Dividen SIDO</div>
+        <div class="trx-meta">
+          <span class="trx-time">⌚ 09:02</span>
+          <span class="trx-cat-badge cat-income">INCOME</span>
+          <span class="trx-source">BCA Mobile</span>
+        </div>
+      </div>
+      <div class="trx-amount">
+        <div class="trx-nominal nom-income">+ Rp 150.000</div>
+        <div class="trx-type-label">PEMASUKAN</div>
+      </div>
+      <button class="trx-edit" title="Edit transaksi">✎</button>
+    </div>
+
+    <div class="trx-row fade" data-cat="INCOME">
+      <div class="trx-date"><div class="trx-date-month">May</div><div class="trx-date-day">01</div></div>
+      <div class="trx-info">
+        <div class="trx-name">Uang Bulanan</div>
+        <div class="trx-meta">
+          <span class="trx-time">⌚ 10:15</span>
+          <span class="trx-cat-badge cat-income">INCOME</span>
+          <span class="trx-source">Cash</span>
+        </div>
+      </div>
+      <div class="trx-amount">
+        <div class="trx-nominal nom-income">+ Rp 1.000.000</div>
+        <div class="trx-type-label">PEMASUKAN</div>
+      </div>
+      <button class="trx-edit" title="Edit transaksi">✎</button>
+    </div>
+
+    <!-- APRIL 2026 -->
+    <div class="month-group-header" data-month-group>
+      <span class="month-badge">April 2026</span>
+      <div class="month-line"></div>
+      <span class="month-count">5 transaksi</span>
+    </div>
+
+    <div class="trx-row fade" data-cat="EQUIPMENT">
+      <div class="trx-date"><div class="trx-date-month">Apr</div><div class="trx-date-day">29</div></div>
+      <div class="trx-info">
+        <div class="trx-name">Pembelian Grinder Timemore S3</div>
+        <div class="trx-meta">
+          <span class="trx-time">⌚ 15:43</span>
+          <span class="trx-cat-badge cat-equip">EQUIPMENT</span>
+          <span class="trx-source">Mandiri Livin</span>
+        </div>
+      </div>
+      <div class="trx-amount">
+        <div class="trx-nominal nom-debit">- Rp 1.674.000</div>
+        <div class="trx-type-label">PENGELUARAN</div>
+      </div>
+      <button class="trx-edit" title="Edit transaksi">✎</button>
+    </div>
+
+    <div class="trx-row fade" data-cat="PAYLATER">
+      <div class="trx-date"><div class="trx-date-month">Apr</div><div class="trx-date-day">26</div></div>
+      <div class="trx-info">
+        <div class="trx-name">Ganti Alat Mapala — Carabiner Delta William</div>
+        <div class="trx-meta">
+          <span class="trx-time">⌚ 17:15</span>
+          <span class="trx-cat-badge cat-paylater">PAYLATER</span>
+          <span class="trx-source">PayLater</span>
+        </div>
+      </div>
+      <div class="trx-amount">
+        <div class="trx-nominal nom-debt">- Rp 720.000</div>
+        <div class="trx-type-label">UTANG (LIABILITY)</div>
+      </div>
+      <button class="trx-edit" title="Edit transaksi">✎</button>
+    </div>
+
+    <div class="trx-row fade" data-cat="PAYLATER">
+      <div class="trx-date"><div class="trx-date-month">Apr</div><div class="trx-date-day">26</div></div>
+      <div class="trx-info">
+        <div class="trx-name">Ganti Alat Mapala — Petzl Reverso</div>
+        <div class="trx-meta">
+          <span class="trx-time">⌚ 16:43</span>
+          <span class="trx-cat-badge cat-paylater">PAYLATER</span>
+          <span class="trx-source">PayLater</span>
+        </div>
+      </div>
+      <div class="trx-amount">
+        <div class="trx-nominal nom-debt">- Rp 400.000</div>
+        <div class="trx-type-label">UTANG (LIABILITY)</div>
+      </div>
+      <button class="trx-edit" title="Edit transaksi">✎</button>
+    </div>
+
+    <div class="trx-row fade" data-cat="INVESTMENT">
+      <div class="trx-date"><div class="trx-date-month">Apr</div><div class="trx-date-day">05</div></div>
+      <div class="trx-info">
+        <div class="trx-name">Beli Saham SIDO</div>
+        <div class="trx-meta">
+          <span class="trx-time">⌚ 14:30</span>
+          <span class="trx-cat-badge cat-invest">INVESTMENT</span>
+          <span class="trx-source">BCA Mobile → Stockbit RDN</span>
+        </div>
+      </div>
+      <div class="trx-amount">
+        <div class="trx-nominal nom-debit">- Rp 500.000</div>
+        <div class="trx-type-label">PENGELUARAN</div>
+      </div>
+      <button class="trx-edit" title="Edit transaksi">✎</button>
+    </div>
+
+    <div class="trx-row fade" data-cat="INVESTMENT">
+      <div class="trx-date"><div class="trx-date-month">Apr</div><div class="trx-date-day">03</div></div>
+      <div class="trx-info">
+        <div class="trx-name">Beli Saham BBRI</div>
+        <div class="trx-meta">
+          <span class="trx-time">⌚ 11:20</span>
+          <span class="trx-cat-badge cat-invest">INVESTMENT</span>
+          <span class="trx-source">BCA Mobile → Stockbit RDN</span>
+        </div>
+      </div>
+      <div class="trx-amount">
+        <div class="trx-nominal nom-debit">- Rp 1.000.000</div>
+        <div class="trx-type-label">PENGELUARAN</div>
+      </div>
+      <button class="trx-edit" title="Edit transaksi">✎</button>
+    </div>
+
+  </div><!-- /wrapper -->
+</div><!-- /page-history -->
+
+<!-- =========================================================
+     PAGE 2: ANALYTICS
+========================================================= -->
+<div id="page-analytics" class="page">
+  <div class="wrapper">
+
+    <!-- AI Header Card -->
+    <div class="ai-header-card fade">
+      <div class="ai-avatar">👔</div>
+      <div>
+        <div class="ai-header-title">Quantitative AI Analyst</div>
+        <div class="ai-header-sub">Holistic 10-Step Ahead Strategy · Binusian Jakarta Cohort 2025</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <span class="ai-badge">🤖 AI-Generated</span>
+          <span class="ai-badge" style="color:var(--teal);border-color:var(--teal);background:var(--teal-dim);">● Live Data</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 1: Macro Diagnostic -->
+    <div class="ai-section fade">
+      <div class="ai-section-header">
+        <span class="ai-section-emoji">⚡</span>
+        <span class="ai-section-title">Macro Diagnostic: The Liquidity Trap</span>
+      </div>
+      <div class="ai-body">
+        <p>
+          Halo <span class="hi-v">Haegusa</span>. Berdasarkan <em>ledger</em> terbaru, posisi neraca pribadi Anda menunjukkan anomali yang sangat berbahaya. Anda memegang <em>Current Cash</em> sebesar <span class="hi-t">Rp 5.450.500</span>. Di saat yang sama, Anda mengakumulasi <em>Accounts Payable</em> (PayLater) sebesar <span class="hi-c">Rp 1.120.000</span> untuk pembelian alat Mapala — Carabiner Delta William dan Petzl Reverso.
+        </p>
+        <p>
+          Ini adalah <span class="hi-a">textbook cognitive dissonance</span> dalam <em>Behavioral Finance</em>: membiayai liabilitas non-produktif (hobi pendakian) dengan fasilitas kredit konsumtif berbunga tinggi, padahal Anda memiliki likuiditas tunai yang berlebih. <em>Compound interest</em> dari PayLater akan menggerus dan membatalkan hasil <em>passive income</em> dividen Anda — <span class="hi-t">Rp 359.000</span> dari SIDO dan BBRI — secara eksponensial setiap bulannya.
+        </p>
+      </div>
+    </div>
+
+    <!-- Section 2: Micro Assessment -->
+    <div class="ai-section fade">
+      <div class="ai-section-header">
+        <span class="ai-section-emoji">📊</span>
+        <span class="ai-section-title">Micro Assessment &amp; Capital Expenditure (CAPEX)</span>
+      </div>
+      <div class="ai-body">
+        <p>
+          Sebagai mahasiswa BINUS di Jakarta, Anda hidup di salah satu ekosistem biaya hidup tertinggi di Indonesia. Pembelian <em>Grinder Timemore S3</em> seharga <span class="hi-a">Rp 1.674.000</span> merupakan <em>Capital Expenditure</em> (CAPEX) yang sangat agresif untuk profil keuangan mahasiswa.
+        </p>
+        <p>
+          Jika alat ini digunakan untuk men-<em>substitusi</em> kebiasaan ngopi di kafe secara total, maka <em>Return on Investment</em> (ROI) akan positif dalam kurang dari 4 bulan. Namun, jika Anda tetap membeli kopi di luar (Toko Kopi Tuku, Fore, Tomoro), maka pembelian grinder ini menjadi <span class="hi-c">sunk cost</span> murni dan menekan <em>Month Remaining</em> Anda menjadi hanya <span class="hi-t">Rp 3.635.500</span>.
+        </p>
+        <div class="micro-grid">
+          <div class="micro-card" style="border-left-color:var(--coral)">
+            <div class="micro-card-label">F&amp;B &amp; Coffee Habits</div>
+            <div class="micro-card-title" style="color:var(--coral)">Risiko: SUNK COST</div>
+            <div class="micro-card-body">Jika tetap nongkrong di kafe Kemanggisan, HPP kopi Anda Rp 28K/cangkir vs. Rp 4K jika brew sendiri. ROI grinder menjadi negatif.</div>
+          </div>
+          <div class="micro-card" style="border-left-color:var(--violet)">
+            <div class="micro-card-label">Mapala / Wall Climbing</div>
+            <div class="micro-card-title" style="color:var(--violet)">Risiko: LIFESTYLE INFLATION</div>
+            <div class="micro-card-body">Alat outdoor adalah penyusut kas diam-diam. Total Rp 1.12M dikreditkan via PayLater — bunga aktif sejak hari pembelian, bukan hari jatuh tempo.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: 10-Step Recommendations -->
+    <div class="ai-section fade">
+      <div class="ai-section-header">
+        <span class="ai-section-emoji">🎯</span>
+        <span class="ai-section-title">10-Step Ahead Strategic Recommendations</span>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <span class="label-xs" style="color:var(--violet)">REASONING &amp; EXECUTION PROTOCOLS</span>
+      </div>
+
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-num">01</div>
+          <div>
+            <div class="step-name">Immediate Debt Liquidation — Prioritas 0</div>
+            <div class="step-desc">Gunakan <em>Current Cash</em> Anda untuk melunasi total saldo PayLater <strong style="color:var(--coral)">Rp 1.120.000</strong> sekarang juga. Biaya modal (bunga) PayLater selalu lebih tinggi dari <em>yield</em> instrumen pasar uang atau saham mana pun yang Anda pegang. Jangan bayar bunga untuk hobi.</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">02</div>
+          <div>
+            <div class="step-name">Dividend Reinvestment Plan (DRIP) Sintetis</div>
+            <div class="step-desc">Total dividen <strong style="color:var(--teal)">Rp 359.000</strong> dari SIDO dan BBRI TIDAK boleh masuk ke rekening transaksional (BCA/GoPay). Wajib di-<em>sweep</em> langsung ke RDN Stockbit/Bibit malam ini. Biarkan <em>compound interest</em> bekerja tanpa intervensi emosi belanja.</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">03</div>
+          <div>
+            <div class="step-name">The Coffee Arbitrage Execution</div>
+            <div class="step-desc">Grinder Timemore S3 sudah di tangan. Hukumannya: <strong style="color:var(--amber)">zero coffee shop hopping</strong> di area Kemanggisan/Alam Sutera untuk sisa semester ini. Arbitrase margin dari langkah ini menghemat minimal <strong style="color:var(--teal)">Rp 280.000/bulan</strong> (10 cangkir x Rp 28.000).</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">04</div>
+          <div>
+            <div class="step-name">Freeze CAPEX Hobi — 90-Day Moratorium</div>
+            <div class="step-desc">Total pengeluaran alat hobi (kopi + pendakian) sudah melebihi <strong style="color:var(--coral)">Rp 2.794.000</strong>. Bekukan seluruh pembelian peralatan hobi setidaknya 90 hari ke depan sampai rasio tabungan terhadap pengeluaran kembali ke angka sehat di atas <strong style="color:var(--teal)">40%</strong>.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Verdict box -->
+      <div class="verdict-box">
+        <p class="verdict-text">
+          Neraca keuangan adalah cermin kedewasaan. Laporan Anda menunjukkan Anda memiliki kemampuan kapital yang baik, namun rentan pada <em>impulsive buying</em> berkedok hobi dan gaya hidup. Lunasi PayLater sekarang, dan biarkan dividen Anda bekerja secara senyap di pasar modal.
+        </p>
+      </div>
+    </div>
+
+  </div><!-- /wrapper -->
+</div><!-- /page-analytics -->
+
+<!-- =========================================================
+     PAGE 3: PROFILE & FORM
+========================================================= -->
+<div id="page-profile" class="page">
+  <div class="wrapper">
+
+    <div class="divider" style="margin-top:0">
+      <div class="divider-line"></div>
+      <div class="divider-text">Profile &amp; Transaction Form</div>
+      <div class="divider-line"></div>
+    </div>
+
+    <!-- 2-col cards -->
+    <div class="profile-grid">
+
+      <!-- Profile card -->
+      <div class="profile-card fade">
+        <div class="panel-header" style="border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-family:var(--font-head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:0.03em;">User Profile</span>
+          <span class="chip chip-violet">GoPay Style</span>
+        </div>
+
+        <div class="profile-avatar-row">
+          <div class="profile-avatar">👤</div>
+          <div>
+            <div class="profile-fullname">Thaddeus Tanto Wiliam Lo</div>
+            <div class="profile-nickname">"Haegusa"</div>
+            <span class="chip chip-teal" style="font-size:8px;padding:2px 8px;">● Verified</span>
+          </div>
+        </div>
+
+        <div class="profile-data-row">
+          <span class="profile-data-key">Phone</span>
+          <span class="profile-data-val">+62 812 978 172 476</span>
+        </div>
+        <div class="profile-data-row">
+          <span class="profile-data-key">Email</span>
+          <span class="profile-data-val">MonyetPanjat047@gmail.com</span>
+        </div>
+        <div class="profile-data-row">
+          <span class="profile-data-key">Address</span>
+          <span class="profile-data-val">Jl. Pak Gatot, Gang Bibir No.67 RT/RW 6/7</span>
+        </div>
+        <div class="profile-data-row">
+          <span class="profile-data-key">Institution</span>
+          <span class="profile-data-val" style="color:var(--teal);">BINUS University · Akuntansi</span>
+        </div>
+
+        <button class="btn-edit-profile">✎ GANTI PROFIL</button>
+      </div>
+
+      <!-- Security card -->
+      <div class="security-card fade">
+        <div style="font-family:var(--font-head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);">
+          Perlindungan Akun
+        </div>
+
+        <div class="sec-shield">🛡️</div>
+        <div class="sec-pct">100%</div>
+        <div class="sec-status-text">✓ Aman Sentosa — Sepenuhnya Terlindungi</div>
+
+        <div class="sec-bar-track"><div class="sec-bar-fill"></div></div>
+
+        <div class="sec-items">
+          <div class="sec-item">
+            <span class="sec-item-icon">🔐</span>
+            <span class="sec-item-label">PIN &amp; Biometric Lock</span>
+            <span class="sec-item-badge">Active</span>
+          </div>
+          <div class="sec-item">
+            <span class="sec-item-icon">📱</span>
+            <span class="sec-item-label">Device Verification</span>
+            <span class="sec-item-badge">Verified</span>
+          </div>
+          <div class="sec-item">
+            <span class="sec-item-icon">🛡️</span>
+            <span class="sec-item-label">Fraud Monitoring</span>
+            <span class="sec-item-badge">On</span>
+          </div>
+        </div>
+
+        <a href="#" class="sec-link">Kontrol keamanan akunmu →</a>
+      </div>
+    </div>
+
+    <!-- Transaction Form -->
+    <div class="divider">
+      <div class="divider-line"></div>
+      <div class="divider-text">Account Master · Catat Transaksi Baru</div>
+      <div class="divider-line"></div>
+    </div>
+
+    <div class="form-panel fade">
+
+      <!-- Type toggle -->
+      <div style="font-size:9px;letter-spacing:0.14em;color:var(--text-3);text-transform:uppercase;margin-bottom:8px;">Tipe Transaksi</div>
+      <div class="type-toggle" id="typeToggle">
+        <button class="type-btn active-pengeluaran" data-type="pengeluaran" onclick="setType(this)">Pengeluaran</button>
+        <button class="type-btn" data-type="utang"       onclick="setType(this)">Utang / PayLater</button>
+        <button class="type-btn" data-type="pendapatan"  onclick="setType(this)">Pendapatan</button>
+      </div>
+
+      <!-- Amount display -->
+      <div style="font-size:9px;letter-spacing:0.14em;color:var(--text-3);text-transform:uppercase;margin-bottom:8px;">Nominal (Rp)</div>
+      <div class="amount-display">
+        <div class="amount-prefix" id="amtPrefix">Pengeluaran</div>
+        <div class="amount-value col-amber" id="amtDisplay">0</div>
+      </div>
+
+      <!-- Numpad -->
+      <div style="font-size:9px;letter-spacing:0.14em;color:var(--text-3);text-transform:uppercase;margin-bottom:8px;">Keypad</div>
+      <div class="numpad" id="numpad">
+        <button class="num-btn" onclick="numInput('7')">7</button>
+        <button class="num-btn" onclick="numInput('8')">8</button>
+        <button class="num-btn" onclick="numInput('9')">9</button>
+        <button class="num-btn" onclick="numInput('4')">4</button>
+        <button class="num-btn" onclick="numInput('5')">5</button>
+        <button class="num-btn" onclick="numInput('6')">6</button>
+        <button class="num-btn" onclick="numInput('1')">1</button>
+        <button class="num-btn" onclick="numInput('2')">2</button>
+        <button class="num-btn" onclick="numInput('3')">3</button>
+        <button class="num-btn zero-wide" onclick="numInput('000')">000</button>
+        <button class="num-btn" onclick="numInput('0')">0</button>
+        <button class="num-btn del-btn" onclick="numDel()">DEL</button>
+      </div>
+
+      <!-- Fields -->
+      <div class="field-row">
+        <div class="field-group">
+          <label>Keterangan</label>
+          <input type="text" class="field-input" id="txDesc" placeholder="Contoh: Beli Kopi / Gaji Bulan Ini" />
+        </div>
+        <div class="field-group">
+          <label>Kategori</label>
+          <select class="field-select" id="txCat">
+            <option value="PAYLATER">PAYLATER (Utang)</option>
+            <option value="EQUIPMENT">EQUIPMENT (Peralatan)</option>
+            <option value="F&B">F&amp;B (Makanan/Minuman)</option>
+            <option value="TRANSPORTATION">TRANSPORTATION</option>
+            <option value="ENTERTAINMENT">ENTERTAINMENT</option>
+            <option value="INVESTMENT">INVESTMENT (Saham/Aset)</option>
+            <option value="INCOME">INCOME (Pendapatan)</option>
+            <option value="OTHER">OTHER</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <button class="btn-cta" onclick="saveTx()">
+        <span>⏎</span> SIMPAN &amp; ENTER
+      </button>
+
+    </div><!-- /form-panel -->
+
+  </div><!-- /wrapper -->
+</div><!-- /page-profile -->
+
+<!-- =========================================================
+     TICKER FOOTER
+========================================================= -->
+<div class="ticker-bar">
+  <div class="ticker-label">⬡ LIVE</div>
+  <div class="ticker-track">
+    <div class="ticker-inner" id="ticker"></div>
+  </div>
+</div>
+
+<!-- =========================================================
+     JAVASCRIPT
+========================================================= -->
+<script>
+/* ---- CLOCK ---- */
+function updateClock() {
+  const n = new Date();
+  const pad = v => String(v).padStart(2,'0');
+  document.getElementById('clock').textContent = pad(n.getHours())+':'+pad(n.getMinutes())+':'+pad(n.getSeconds());
+}
+updateClock(); setInterval(updateClock, 1000);
+
+/* ---- PAGE SWITCHER ---- */
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  btn.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ---- FILTER CHIPS ---- */
+function filterTrx(btn) {
+  const filter = btn.dataset.filter;
+
+  // reset all chip active classes
+  document.querySelectorAll('.filter-chip').forEach(c => {
+    c.className = 'filter-chip';
+  });
+
+  // apply correct active class
+  if (filter === 'all')        btn.classList.add('active-all');
+  else if (filter === 'INCOME')    btn.classList.add('active-income');
+  else if (filter === 'EQUIPMENT') btn.classList.add('active-equip');
+  else if (filter === 'PAYLATER')  btn.classList.add('active-paylater');
+  else if (filter === 'INVESTMENT')btn.classList.add('active-invest');
+
+  // show/hide rows
+  document.querySelectorAll('.trx-row').forEach(row => {
+    if (filter === 'all' || row.dataset.cat === filter) {
+      row.removeAttribute('data-hidden');
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+}
+
+/* ---- TRANSACTION FORM ---- */
+let amtRaw = '';
+let currentType = 'pengeluaran';
+
+const typeColorMap = {
+  pengeluaran: { cls: 'col-amber', prefix: 'Pengeluaran' },
+  utang:       { cls: 'col-coral', prefix: 'Utang / PayLater' },
+  pendapatan:  { cls: 'col-teal',  prefix: 'Pendapatan' },
+};
+
+function setType(btn) {
+  currentType = btn.dataset.type;
+  document.querySelectorAll('.type-btn').forEach(b => {
+    b.className = 'type-btn';
+  });
+  btn.classList.add('active-' + currentType);
+
+  const amtEl = document.getElementById('amtDisplay');
+  amtEl.className = 'amount-value ' + typeColorMap[currentType].cls;
+  document.getElementById('amtPrefix').textContent = typeColorMap[currentType].prefix;
+}
+
+function numInput(val) {
+  if (amtRaw === '0') amtRaw = '';
+  amtRaw += val;
+  if (amtRaw.length > 13) amtRaw = amtRaw.slice(0, 13);
+  updateAmtDisplay();
+}
+
+function numDel() {
+  amtRaw = amtRaw.slice(0, -1);
+  updateAmtDisplay();
+}
+
+function updateAmtDisplay() {
+  const num = parseInt(amtRaw || '0', 10);
+  document.getElementById('amtDisplay').textContent = num.toLocaleString('id-ID');
+}
+
+function saveTx() {
+  const desc = document.getElementById('txDesc').value.trim();
+  const cat  = document.getElementById('txCat').value;
+  const amt  = parseInt(amtRaw || '0', 10);
+
+  if (!desc) { alert('Isi keterangan terlebih dahulu.'); return; }
+  if (amt <= 0) { alert('Masukkan nominal yang valid.'); return; }
+
+  const typeLabel = {
+    pengeluaran: 'PENGELUARAN',
+    utang:       'UTANG (LIABILITY)',
+    pendapatan:  'PEMASUKAN',
+  }[currentType];
+
+  alert(
+    '✔ Transaksi disimpan!\n\n' +
+    'Tipe : ' + typeLabel + '\n' +
+    'Nominal : Rp ' + amt.toLocaleString('id-ID') + '\n' +
+    'Keterangan : ' + desc + '\n' +
+    'Kategori : ' + cat
+  );
+
+  // reset
+  amtRaw = '';
+  updateAmtDisplay();
+  document.getElementById('txDesc').value = '';
+}
+
+/* ---- TICKER ---- */
+const tickerItems = [
+  { key:'CURRENT CASH',  val:'Rp 5.450.500',   cls:'t-pos' },
+  { key:'PAYLATER DEBT', val:'Rp 1.120.000',   cls:'t-neg' },
+  { key:'INCOME',        val:'Rp 1.359.000',   cls:'t-pos' },
+  { key:'MONTH REM.',    val:'Rp 3.635.500',   cls:'t-pos' },
+  { key:'INVESTMENT',    val:'Rp 1.500.000',   cls:'t-wht' },
+  { key:'EQUIPMENT',     val:'Rp 1.674.000',   cls:'t-neg' },
+  { key:'DIVIDEN SIDO',  val:'+Rp 150.000',    cls:'t-pos' },
+  { key:'DIVIDEN BBRI',  val:'+Rp 209.000',    cls:'t-pos' },
+  { key:'DEBT RATIO',    val:'20.5%',           cls:'t-neg' },
+  { key:'GRINDER ROI',   val:'~4 MONTHS',      cls:'t-wht' },
+];
+
+const tickerEl = document.getElementById('ticker');
+[...tickerItems, ...tickerItems].forEach(item => {
+  const d = document.createElement('div');
+  d.className = 'ticker-item';
+  d.innerHTML = '<span class="t-key">' + item.key + '</span><span class="' + item.cls + '">' + item.val + '</span>';
+  tickerEl.appendChild(d);
+});
+</script>
+
+</body>
+</html>

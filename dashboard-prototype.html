@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Binusian-MonthlyBudgeting · Neo-Noir Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+
+<style>
+/* =========================================================
+   DESIGN TOKENS
+========================================================= */
+:root {
+  --bg:         #0A0A0C;
+  --surface:    #111115;
+  --surface2:   #16161C;
+  --border:     #2A2A35;
+  --border-hi:  #3A3A48;
+
+  --teal:       #00FFB3;
+  --teal-dim:   #00FFB322;
+  --violet:     #7B61FF;
+  --violet-dim: #7B61FF22;
+  --coral:      #FF6B6B;
+  --coral-dim:  #FF6B6B22;
+  --amber:      #FFBE0B;
+  --amber-dim:  #FFBE0B22;
+
+  --text-1: #F0F0F5;
+  --text-2: #8A8A9A;
+  --text-3: #55556A;
+
+  --font-head: 'Syne', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+}
+
+/* =========================================================
+   RESET & BASE
+========================================================= */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { height: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--text-1);
+  font-family: var(--font-mono);
+  min-height: 100%;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* CRT scanline overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.06) 2px,
+    rgba(0,0,0,0.06) 4px
+  );
+}
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 2px; }
+
+/* =========================================================
+   UTILITY
+========================================================= */
+.label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.value-lg {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-1);
+  line-height: 1.1;
+}
+
+.heading {
+  font-family: var(--font-head);
+  font-weight: 800;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border: 1px solid currentColor;
+  opacity: 0.85;
+}
+
+.chip.up   { color: var(--teal);   background: var(--teal-dim);   border-color: var(--teal); }
+.chip.down { color: var(--coral);  background: var(--coral-dim);  border-color: var(--coral); }
+.chip.warn { color: var(--amber);  background: var(--amber-dim);  border-color: var(--amber); }
+.chip.info { color: var(--violet); background: var(--violet-dim); border-color: var(--violet); }
+
+.tag-ai {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--violet);
+  border: 1px solid var(--violet);
+  background: var(--violet-dim);
+  padding: 2px 8px;
+}
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 9px 18px;
+  border-radius: 0;
+  cursor: pointer;
+  transition: opacity 0.2s, background 0.2s;
+  border: none;
+}
+
+.btn-primary {
+  background: var(--teal);
+  color: #000;
+  font-weight: 700;
+}
+.btn-primary:hover { opacity: 0.85; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--teal);
+  border: 1px solid var(--teal);
+}
+.btn-ghost:hover { background: var(--teal-dim); }
+
+/* =========================================================
+   LAYOUT
+========================================================= */
+.wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px 100px;
+}
+
+/* =========================================================
+   NAVBAR
+========================================================= */
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 56px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: rgba(10,10,12,0.96);
+  backdrop-filter: blur(12px);
+  z-index: 100;
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav-logo-text {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--teal);
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--teal);
+  animation: pulse-glow 1.8s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1;   box-shadow: 0 0 0   0 rgba(0,255,179,0.6); }
+  50%       { opacity: 0.6; box-shadow: 0 0 0 8px rgba(0,255,179,0); }
+}
+
+.nav-tabs {
+  display: flex;
+  gap: 2px;
+}
+
+.nav-tab {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  padding: 6px 18px;
+  background: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.nav-tab:hover { color: var(--text-1); border-color: var(--border-hi); }
+
+.nav-tab.active {
+  color: var(--teal);
+  border: 1px solid var(--teal);
+  background: var(--teal-dim);
+}
+
+.nav-clock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  padding: 4px 12px;
+  background: var(--surface);
+}
+
+.clock-time { color: var(--text-1); font-weight: 700; }
+
+/* =========================================================
+   PAGE HEADER
+========================================================= */
+.page-header {
+  padding: 28px 0 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 28px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.greeting-label {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--text-3);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.greeting-name {
+  font-family: var(--font-head);
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text-1);
+  line-height: 1;
+}
+
+.greeting-name span { color: var(--teal); }
+
+.greeting-sub {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 8px;
+  letter-spacing: 0.06em;
+}
+
+.header-date {
+  text-align: right;
+  font-size: 10px;
+  color: var(--text-3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1.8;
+}
+
+/* =========================================================
+   STAT CARDS
+========================================================= */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+
+.stat-card.coral::before { background: var(--coral); }
+.stat-card.teal::before  { background: var(--teal); }
+.stat-card.green::before { background: #00D4A3; }
+.stat-card.pink::before  { background: #FF61A6; }
+
+.stat-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.stat-icon {
+  font-size: 16px;
+  opacity: 0.6;
+}
+
+.stat-value {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-1);
+  margin-bottom: 8px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.stat-value.coral { color: var(--coral); }
+.stat-value.teal  { color: var(--teal); }
+.stat-value.green { color: #00D4A3; }
+
+.stat-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.stat-detail { font-size: 9px; color: var(--text-3); letter-spacing: 0.08em; }
+
+/* =========================================================
+   MIDDLE ROW: ALLOCATION + ANALYSIS
+========================================================= */
+.mid-row {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 24px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-title {
+  font-family: var(--font-head);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-1);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* --- Donut chart --- */
+.donut-wrap {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.donut-chart-container {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  flex-shrink: 0;
+}
+
+.donut-svg {
+  width: 160px;
+  height: 160px;
+  transform: rotate(-90deg);
+}
+
+.donut-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.donut-inner-label { font-size: 8px; color: var(--text-3); letter-spacing: 0.14em; text-transform: uppercase; }
+.donut-inner-value { font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-1); margin-top: 2px; }
+
+/* --- Category bars --- */
+.cat-bars { flex: 1; }
+
+.cat-bar-item { margin-bottom: 14px; }
+
+.cat-bar-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.cat-bar-name  { font-size: 9px; letter-spacing: 0.12em; color: var(--text-2); text-transform: uppercase; }
+.cat-bar-pct   { font-family: var(--font-mono); font-size: 10px; font-weight: 700; }
+.cat-bar-val   { font-family: var(--font-mono); font-size: 9px; color: var(--text-3); }
+
+.cat-bar-track {
+  height: 3px;
+  background: var(--border);
+  position: relative;
+  overflow: hidden;
+}
+
+.cat-bar-fill {
+  height: 100%;
+  position: absolute;
+  left: 0; top: 0;
+  transition: width 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* --- Short Analysis panel --- */
+.analysis-body { font-size: 12px; line-height: 1.75; color: var(--text-2); margin-bottom: 18px; }
+.analysis-body .hi-teal   { color: var(--teal);   font-family: var(--font-mono); font-weight: 700; }
+.analysis-body .hi-coral  { color: var(--coral);  font-family: var(--font-mono); font-weight: 700; }
+.analysis-body .hi-amber  { color: var(--amber);  font-family: var(--font-mono); font-weight: 700; }
+.analysis-body .hi-violet { color: var(--violet); font-family: var(--font-mono); font-weight: 700; }
+
+.insight-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.insight-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 14px;
+}
+
+.insight-card-label { font-size: 8px; letter-spacing: 0.14em; color: var(--text-3); text-transform: uppercase; margin-bottom: 6px; }
+.insight-card-val   { font-family: var(--font-mono); font-size: 16px; font-weight: 700; }
+.insight-card-sub   { font-size: 9px; color: var(--text-3); margin-top: 4px; }
+
+.action-row { display: flex; gap: 10px; }
+
+/* =========================================================
+   BOTTOM ROW (3 MINI PANELS)
+========================================================= */
+.bottom-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+/* Month progress */
+.month-progress-track {
+  height: 8px;
+  background: var(--border);
+  margin: 16px 0 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.month-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--teal), var(--violet));
+  transition: width 1.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.month-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--text-3);
+  letter-spacing: 0.08em;
+}
+
+.month-stat-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.month-stat { text-align: center; }
+.month-stat .label { margin-bottom: 4px; display: block; }
+.month-stat .val {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+/* Sparkline */
+.sparkline-wrap {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 80px;
+  padding: 0 0 4px;
+  margin: 16px 0 12px;
+}
+
+.spark-bar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.spark-bar {
+  width: 100%;
+  transition: height 1s ease;
+  position: relative;
+}
+
+.spark-label {
+  font-size: 8px;
+  color: var(--text-3);
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+/* System status */
+.status-list { margin-top: 6px; }
+.status-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+}
+.status-item:last-child { border-bottom: none; }
+.status-name { font-size: 10px; color: var(--text-2); letter-spacing: 0.06em; text-transform: uppercase; }
+
+.status-chip {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border: 1px solid;
+}
+.status-chip.healthy  { color: var(--teal);   border-color: var(--teal);   background: var(--teal-dim); }
+.status-chip.review   { color: var(--coral);  border-color: var(--coral);  background: var(--coral-dim); }
+.status-chip.growing  { color: var(--violet); border-color: var(--violet); background: var(--violet-dim); }
+.status-chip.on-track { color: var(--amber);  border-color: var(--amber);  background: var(--amber-dim); }
+
+/* =========================================================
+   TICKER FOOTER
+========================================================= */
+.ticker-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 36px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  z-index: 200;
+}
+
+.ticker-label {
+  flex-shrink: 0;
+  padding: 0 16px;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--teal);
+  text-transform: uppercase;
+  background: var(--teal-dim);
+  border-right: 1px solid var(--teal);
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.ticker-track {
+  flex: 1;
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.ticker-inner {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  white-space: nowrap;
+  animation: ticker-scroll 30s linear infinite;
+}
+
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 28px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-2);
+  border-right: 1px solid var(--border);
+}
+
+.ticker-item .t-key { color: var(--text-3); }
+.ticker-item .t-val { color: var(--text-1); font-weight: 700; }
+.ticker-item .t-pos { color: var(--teal); }
+.ticker-item .t-neg { color: var(--coral); }
+
+/* =========================================================
+   DIVIDER
+========================================================= */
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 20px;
+}
+
+.section-divider-line { flex: 1; height: 1px; background: var(--border); }
+.section-divider-text { font-size: 9px; letter-spacing: 0.16em; color: var(--text-3); text-transform: uppercase; white-space: nowrap; }
+
+/* =========================================================
+   FADE-IN ANIMATION
+========================================================= */
+.fade-in {
+  animation: fade-in-up 0.5s ease both;
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* stagger children */
+.stat-grid .stat-card:nth-child(1) { animation-delay: 0.05s; }
+.stat-grid .stat-card:nth-child(2) { animation-delay: 0.10s; }
+.stat-grid .stat-card:nth-child(3) { animation-delay: 0.15s; }
+.stat-grid .stat-card:nth-child(4) { animation-delay: 0.20s; }
+</style>
+</head>
+
+<body>
+
+<!-- =========================================================
+     NAVBAR
+========================================================= -->
+<nav>
+  <div class="nav-logo">
+    <div class="pulse-dot"></div>
+    <span class="nav-logo-text">BMB::TERMINAL_v3</span>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active">Dashboard</button>
+    <button class="nav-tab">History</button>
+    <button class="nav-tab">Analytics</button>
+  </div>
+
+  <div class="nav-clock">
+    <span class="label">SYS.TIME</span>
+    <span class="clock-time" id="clock">--:--:--</span>
+  </div>
+</nav>
+
+<!-- =========================================================
+     MAIN WRAPPER
+========================================================= -->
+<div class="wrapper">
+
+  <!-- Page Header -->
+  <div class="page-header fade-in">
+    <div>
+      <div class="greeting-label">Welcome back · Binusian Cohort 2025</div>
+      <div class="greeting-name">Haloo, <span>Haegusa</span>.</div>
+      <div class="greeting-sub">Financial command center · Jakarta Edition</div>
+    </div>
+    <div class="header-date" id="header-date">
+      <!-- populated by JS -->
+    </div>
+  </div>
+
+  <!-- ===================================================
+       STAT CARDS
+  ==================================================== -->
+  <div class="section-divider">
+    <div class="section-divider-line"></div>
+    <div class="section-divider-text">01 · Key Metrics</div>
+    <div class="section-divider-line"></div>
+  </div>
+
+  <div class="stat-grid">
+    <!-- PayLater -->
+    <div class="stat-card coral fade-in">
+      <div class="stat-top">
+        <span class="label">PayLater</span>
+        <span class="stat-icon">💳</span>
+      </div>
+      <div class="stat-value coral">Rp 1.120.000</div>
+      <div class="stat-footer">
+        <span class="stat-detail">Carabiner + Petzl Reverso</span>
+        <span class="chip down">▲ REVIEW</span>
+      </div>
+    </div>
+
+    <!-- Current Cash -->
+    <div class="stat-card teal fade-in">
+      <div class="stat-top">
+        <span class="label">Current Cash</span>
+        <span class="stat-icon">🏦</span>
+      </div>
+      <div class="stat-value teal">Rp 5.450.500</div>
+      <div class="stat-footer">
+        <span class="stat-detail">Liquid reserve · BCA + GoPay</span>
+        <span class="chip up">● HEALTHY</span>
+      </div>
+    </div>
+
+    <!-- Income Added -->
+    <div class="stat-card green fade-in">
+      <div class="stat-top">
+        <span class="label">Income Added</span>
+        <span class="stat-icon">📈</span>
+      </div>
+      <div class="stat-value green">Rp 1.359.000</div>
+      <div class="stat-footer">
+        <span class="stat-detail">Dividen SIDO + BBRI + Bulanan</span>
+        <span class="chip up">▲ UP</span>
+      </div>
+    </div>
+
+    <!-- Month Remaining -->
+    <div class="stat-card pink fade-in">
+      <div class="stat-top">
+        <span class="label">Month Remaining</span>
+        <span class="stat-icon">📅</span>
+      </div>
+      <div class="stat-value" style="color:#FF61A6">Rp 3.635.500</div>
+      <div class="stat-footer">
+        <span class="stat-detail">After non-debt expenses</span>
+        <span class="chip info">→ ON TRACK</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================
+       ALLOCATION + ANALYSIS
+  ==================================================== -->
+  <div class="section-divider" style="margin-top:8px;">
+    <div class="section-divider-line"></div>
+    <div class="section-divider-text">02 · Allocation & Insights</div>
+    <div class="section-divider-line"></div>
+  </div>
+
+  <div class="mid-row">
+
+    <!-- ALLOCATION PANEL -->
+    <div class="panel fade-in">
+      <div class="panel-header">
+        <span class="panel-title">Capital Allocation</span>
+        <span class="chip info">TOTAL · Rp 9.744.500</span>
+      </div>
+
+      <div class="donut-wrap">
+        <!-- SVG DONUT -->
+        <div class="donut-chart-container">
+          <svg class="donut-svg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+            <!-- r=64 → C = 2π×64 = 402.12 -->
+            <!-- Cash 56%    → 225.19 -->
+            <!-- Equipment 17% → 68.36 -->
+            <!-- Investment 15% → 60.32 -->
+            <!-- PayLater 12% → 48.25 -->
+
+            <!-- Cash — Teal -->
+            <circle cx="80" cy="80" r="64"
+              fill="none"
+              stroke="#00FFB3"
+              stroke-width="18"
+              stroke-dasharray="225.19 176.93"
+              stroke-dashoffset="0"
+              stroke-linecap="butt"
+            />
+            <!-- Equipment — Amber -->
+            <circle cx="80" cy="80" r="64"
+              fill="none"
+              stroke="#FFBE0B"
+              stroke-width="18"
+              stroke-dasharray="68.36 333.76"
+              stroke-dashoffset="-225.19"
+              stroke-linecap="butt"
+            />
+            <!-- Investment — Violet -->
+            <circle cx="80" cy="80" r="64"
+              fill="none"
+              stroke="#7B61FF"
+              stroke-width="18"
+              stroke-dasharray="60.32 341.80"
+              stroke-dashoffset="-293.55"
+              stroke-linecap="butt"
+            />
+            <!-- PayLater — Coral -->
+            <circle cx="80" cy="80" r="64"
+              fill="none"
+              stroke="#FF6B6B"
+              stroke-width="18"
+              stroke-dasharray="48.25 353.87"
+              stroke-dashoffset="-353.87"
+              stroke-linecap="butt"
+            />
+          </svg>
+
+          <div class="donut-inner">
+            <div class="donut-inner-label">Allocated</div>
+            <div class="donut-inner-value">9.7M</div>
+            <div style="font-size:8px;color:var(--text-3);margin-top:2px;letter-spacing:0.1em;">IDR</div>
+          </div>
+        </div>
+
+        <!-- CATEGORY BARS -->
+        <div class="cat-bars">
+          <!-- Cash -->
+          <div class="cat-bar-item">
+            <div class="cat-bar-top">
+              <span class="cat-bar-name" style="color:var(--teal)">● Cash</span>
+              <div>
+                <span class="cat-bar-pct" style="color:var(--teal)">56%</span>
+                <span class="cat-bar-val"> · 5.45M</span>
+              </div>
+            </div>
+            <div class="cat-bar-track"><div class="cat-bar-fill" style="width:56%;background:var(--teal)"></div></div>
+          </div>
+          <!-- Equipment -->
+          <div class="cat-bar-item">
+            <div class="cat-bar-top">
+              <span class="cat-bar-name" style="color:var(--amber)">● Equipment</span>
+              <div>
+                <span class="cat-bar-pct" style="color:var(--amber)">17%</span>
+                <span class="cat-bar-val"> · 1.67M</span>
+              </div>
+            </div>
+            <div class="cat-bar-track"><div class="cat-bar-fill" style="width:17%;background:var(--amber)"></div></div>
+          </div>
+          <!-- Investment -->
+          <div class="cat-bar-item">
+            <div class="cat-bar-top">
+              <span class="cat-bar-name" style="color:var(--violet)">● Investment</span>
+              <div>
+                <span class="cat-bar-pct" style="color:var(--violet)">15%</span>
+                <span class="cat-bar-val"> · 1.50M</span>
+              </div>
+            </div>
+            <div class="cat-bar-track"><div class="cat-bar-fill" style="width:15%;background:var(--violet)"></div></div>
+          </div>
+          <!-- PayLater -->
+          <div class="cat-bar-item">
+            <div class="cat-bar-top">
+              <span class="cat-bar-name" style="color:var(--coral)">● PayLater</span>
+              <div>
+                <span class="cat-bar-pct" style="color:var(--coral)">12%</span>
+                <span class="cat-bar-val"> · 1.12M</span>
+              </div>
+            </div>
+            <div class="cat-bar-track"><div class="cat-bar-fill" style="width:12%;background:var(--coral)"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHORT ANALYSIS PANEL -->
+    <div class="panel fade-in">
+      <div class="panel-header">
+        <span class="panel-title">Short-Analysis</span>
+        <span class="tag-ai">🤖 AI FUND MANAGER</span>
+      </div>
+
+      <p class="analysis-body">
+        Injeksi dividen pasif dari <span class="hi-violet">SIDO</span> dan <span class="hi-violet">BBRI</span>
+        sebesar <span class="hi-teal">Rp 359.000</span> adalah sinyal portofolio fundamental yang sehat.
+        Namun, Anda mengakumulasi <span class="hi-coral">Rp 1.120.000</span> PayLater untuk alat Mapala
+        (Carabiner Delta William + Petzl Reverso) sementara memiliki <span class="hi-teal">Rp 5.450.500</span>
+        tunai — ini adalah <span class="hi-amber">cognitive dissonance</span> klasik dalam Behavioral Finance.
+        CAPEX Grinder Timemore S3 (<span class="hi-amber">Rp 1.674.000</span>) akan ROI positif dalam 4 bulan
+        HANYA jika Anda menghentikan kebiasaan ngopi di kafe Kemanggisan secara total.
+      </p>
+
+      <div class="insight-grid">
+        <div class="insight-card">
+          <div class="insight-card-label">Debt Ratio</div>
+          <div class="insight-card-val" style="color:var(--coral)">20.5%</div>
+          <div class="insight-card-sub">PayLater / Cash · Perlu dilikuidasi</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-card-label">Invest Growth</div>
+          <div class="insight-card-val" style="color:var(--violet)">+Rp 359K</div>
+          <div class="insight-card-sub">Dividen pasif bulan ini · ▲ Growing</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-card-label">CAPEX Burden</div>
+          <div class="insight-card-val" style="color:var(--amber)">Rp 1.67M</div>
+          <div class="insight-card-sub">Grinder S3 · ROI: ~4 bulan</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-card-label">Net Position</div>
+          <div class="insight-card-val" style="color:var(--teal)">+Rp 3.6M</div>
+          <div class="insight-card-sub">Remaining setelah real expenses</div>
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button class="btn btn-primary">↵ Lunasi PayLater Sekarang</button>
+        <button class="btn btn-ghost">→ Buka Analytics Penuh</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================
+       BOTTOM ROW
+  ==================================================== -->
+  <div class="section-divider" style="margin-top:8px;">
+    <div class="section-divider-line"></div>
+    <div class="section-divider-text">03 · System Monitors</div>
+    <div class="section-divider-line"></div>
+  </div>
+
+  <div class="bottom-row">
+
+    <!-- Month Progress -->
+    <div class="panel fade-in">
+      <div class="panel-header">
+        <span class="panel-title">Month Progress</span>
+        <span class="label" id="month-label">May 2026</span>
+      </div>
+
+      <div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <span class="label">Day <span id="day-num" style="color:var(--text-1);font-weight:700"></span> of <span id="days-total" style="color:var(--text-1)"></span></span>
+          <span class="label" style="color:var(--teal)" id="month-pct"></span>
+        </div>
+        <div class="month-progress-track">
+          <div class="month-progress-fill" id="month-fill" style="width:0%"></div>
+        </div>
+
+        <div class="month-stat-row">
+          <div class="month-stat">
+            <span class="label">Spent</span>
+            <div class="val" style="color:var(--coral)">Rp 3.17M</div>
+          </div>
+          <div class="month-stat">
+            <span class="label">Budget</span>
+            <div class="val" style="color:var(--text-1)">Rp 1.00M</div>
+          </div>
+          <div class="month-stat">
+            <span class="label">Remaining</span>
+            <div class="val" style="color:var(--teal)">Rp 3.64M</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weekly Sparkline -->
+    <div class="panel fade-in">
+      <div class="panel-header">
+        <span class="panel-title">Weekly Spend</span>
+        <span class="chip info">IDR · Apr–May 2026</span>
+      </div>
+
+      <div class="sparkline-wrap" id="sparkline">
+        <!-- bars injected by JS -->
+      </div>
+
+      <div style="display:flex;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border);">
+        <span class="label">Avg/week · <span style="color:var(--text-1);font-weight:700">Rp 793K</span></span>
+        <span class="label">Peak · <span style="color:var(--coral);font-weight:700">Rp 1.67M</span></span>
+      </div>
+    </div>
+
+    <!-- System Status -->
+    <div class="panel fade-in">
+      <div class="panel-header">
+        <span class="panel-title">System Status</span>
+        <span class="label" style="color:var(--teal)">4 MODULES</span>
+      </div>
+
+      <div class="status-list">
+        <div class="status-item">
+          <span class="status-name">Cash Reserve</span>
+          <span class="status-chip healthy">HEALTHY</span>
+        </div>
+        <div class="status-item">
+          <span class="status-name">PayLater Debt</span>
+          <span class="status-chip review">REVIEW</span>
+        </div>
+        <div class="status-item">
+          <span class="status-name">Dividend Income</span>
+          <span class="status-chip growing">GROWING</span>
+        </div>
+        <div class="status-item">
+          <span class="status-name">Investment Port.</span>
+          <span class="status-chip on-track">ON TRACK</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /wrapper -->
+
+<!-- =========================================================
+     TICKER FOOTER
+========================================================= -->
+<div class="ticker-bar">
+  <div class="ticker-label">⬡ LIVE</div>
+  <div class="ticker-track">
+    <div class="ticker-inner" id="ticker">
+      <!-- items injected by JS doubled for loop -->
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================
+     JAVASCRIPT
+========================================================= -->
+<script>
+/* ---- CLOCK ---- */
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('clock').textContent = h + ':' + m + ':' + s;
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+/* ---- HEADER DATE ---- */
+const now = new Date();
+const dateOpts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
+const timeOpts = { hour:'2-digit', minute:'2-digit', timeZoneName:'short' };
+document.getElementById('header-date').innerHTML =
+  '<div>' + now.toLocaleDateString('id-ID', dateOpts) + '</div>' +
+  '<div>' + now.toLocaleTimeString('id-ID', timeOpts) + '</div>' +
+  '<div style="margin-top:4px"><span class="chip up">● LIVE</span></div>';
+
+/* ---- MONTH PROGRESS ---- */
+const monthLabel = now.toLocaleString('en-US', { month:'long', year:'numeric' });
+document.getElementById('month-label').textContent = monthLabel;
+
+const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+const dayNum = now.getDate();
+const pct = Math.round((dayNum / daysInMonth) * 100);
+
+document.getElementById('day-num').textContent = dayNum;
+document.getElementById('days-total').textContent = daysInMonth;
+document.getElementById('month-pct').textContent = pct + '% elapsed';
+
+setTimeout(() => {
+  document.getElementById('month-fill').style.width = pct + '%';
+}, 200);
+
+/* ---- SPARKLINE ---- */
+const weekData = [
+  { label: 'W1 Apr', amount: 500000,  color: '#7B61FF' },
+  { label: 'W4 Apr', amount: 1670000, color: '#FF6B6B' },
+  { label: 'W1 May', amount: 1170000, color: '#FFBE0B' },
+  { label: 'W2 May', amount: 832000,  color: '#00FFB3' },
+];
+
+const maxVal = Math.max(...weekData.map(d => d.amount));
+const sparkEl = document.getElementById('sparkline');
+
+weekData.forEach(d => {
+  const heightPct = (d.amount / maxVal) * 100;
+  const wrap = document.createElement('div');
+  wrap.className = 'spark-bar-wrap';
+
+  const amtLabel = document.createElement('div');
+  amtLabel.className = 'spark-label';
+  amtLabel.style.color = d.color;
+  amtLabel.textContent = (d.amount / 1000).toFixed(0) + 'K';
+
+  const bar = document.createElement('div');
+  bar.className = 'spark-bar';
+  bar.style.background = d.color;
+  bar.style.height = '4px';
+  bar.style.opacity = '0.85';
+
+  const lbl = document.createElement('div');
+  lbl.className = 'spark-label';
+  lbl.textContent = d.label;
+
+  wrap.appendChild(amtLabel);
+  wrap.appendChild(bar);
+  wrap.appendChild(lbl);
+  sparkEl.appendChild(wrap);
+
+  setTimeout(() => {
+    bar.style.transition = 'height 1s ease';
+    bar.style.height = heightPct + '%';
+  }, 300);
+});
+
+/* ---- TICKER ---- */
+const tickerItems = [
+  { key: 'CASH',       val: 'Rp 5.450.500', cls: 't-pos' },
+  { key: 'PAYLATER',   val: 'Rp 1.120.000', cls: 't-neg' },
+  { key: 'INCOME',     val: 'Rp 1.359.000', cls: 't-pos' },
+  { key: 'MONTH REM',  val: 'Rp 3.635.500', cls: 't-pos' },
+  { key: 'INVESTMENT', val: 'Rp 1.500.000', cls: 't-pos' },
+  { key: 'EQUIPMENT',  val: 'Rp 1.674.000', cls: 't-neg' },
+  { key: 'SIDO',       val: '+Rp 150.000 DIV', cls: 't-pos' },
+  { key: 'BBRI',       val: '+Rp 209.000 DIV', cls: 't-pos' },
+  { key: 'DEBT RATIO', val: '20.5%',          cls: 't-neg' },
+  { key: 'GRINDER ROI',val: '~4 MONTHS',      cls: 't-pos' },
+  { key: 'NET WORTH',  val: 'Rp 7.830.500',   cls: 't-pos' },
+  { key: 'BUDGET BASE',val: 'Rp 1.000.000',   cls: 't-pos' },
+];
+
+const tickerEl = document.getElementById('ticker');
+// double for seamless loop
+[...tickerItems, ...tickerItems].forEach(item => {
+  const div = document.createElement('div');
+  div.className = 'ticker-item';
+  div.innerHTML =
+    '<span class="t-key">' + item.key + '</span>' +
+    '<span class="t-val ' + item.cls + '">' + item.val + '</span>';
+  tickerEl.appendChild(div);
+});
+
+/* ---- NAV TAB ACTIVE STATE ---- */
+document.querySelectorAll('.nav-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+  });
+});
+
+/* ---- TRIGGER PROGRESS BARS (intersection observer) ---- */
+const bars = document.querySelectorAll('.cat-bar-fill');
+bars.forEach(bar => {
+  const target = bar.style.width;
+  bar.style.width = '0%';
+  setTimeout(() => { bar.style.width = target; }, 400);
+});
+</script>
+
+</body>
+</html>
