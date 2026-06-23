@@ -41,15 +41,12 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
 
   /* Profile */
   const [profile, setProfile] = useState({
-    fullName: 'Thaddeus Tanto Wiliam Lo',
-    nickname: 'Haegusa',
-    phone:    '+62812978172476',
-    email:    'MonyetPanjat047@gmail.com',
-    address:  'Jl. Pak Gatot, Gang Bibir No. 67 RT/RW 6/7',
+    fullName: '', nickname: '', phone: '', email: '', address: ''
   });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [tempProfile,      setTempProfile]      = useState(profile);
+  const [tempProfile,      setTempProfile]      = useState({ fullName:'', nickname:'', phone:'', email:'', address:'' });
   const [avatarUrl,        setAvatarUrl]        = useState<string | null>(null);
+  const [currentCash,      setCurrentCash]      = useState(0);
 
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -61,37 +58,38 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
   };
 
   /* Transactions */
-  const [transactions, setTransactions] = useState<any[]>([
-    { id:'TRX-024',  timestamp:'2026-05-25T14:00:00.000Z', description:'QRIS PC T84B KS TUBU',                     amount:   6500, source:'ShopeePay',   type:'DEBIT',  category:'FOOD & BEVERAGE' },
-    { id:'TRX-023',  timestamp:'2026-05-25T13:00:00.000Z', description:'QRIS PC T84B KS TUBU',                     amount:  25000, source:'ShopeePay',   type:'DEBIT',  category:'FOOD & BEVERAGE' },
-    { id:'TRX-022',  timestamp:'2026-05-24T12:00:00.000Z', description:'Fore Coffee',                              amount: 115000, source:'ShopeePay',   type:'DEBIT',  category:'FOOD & BEVERAGE' },
-    { id:'TRX-021',  timestamp:'2026-05-23T11:00:00.000Z', description:'CIRCLE K - JAK0421 - QRIS',               amount:  16000, source:'ShopeePay',   type:'DEBIT',  category:'FOOD & BEVERAGE' },
-    { id:'TRX-020',  timestamp:'2026-05-23T10:00:00.000Z', description:'FMI BUDI RAYA KMGGSN',                    amount:   5800, source:'ShopeePay',   type:'DEBIT',  category:'FOOD & BEVERAGE' },
-    { id:'TRX-019',  timestamp:'2026-05-22T20:00:00.000Z', description:'Dominos Pizza',                           amount: 139051, source:'ShopeePay',   type:'DEBIT',  category:'FOOD & BEVERAGE' },
-    { id:'TRX-018',  timestamp:'2026-05-22T14:00:00.000Z', description:'QRIS IDM TR99 PENDIDIKAN',                amount:  26900, source:'ShopeePay',   type:'DEBIT',  category:'FOOD & BEVERAGE' },
-    { id:'TRX-017',  timestamp:'2026-05-21T13:00:00.000Z', description:'FAMILYMART RAWA BELONG',                  amount:  19000, source:'ShopeePay',   type:'DEBIT',  category:'FOOD & BEVERAGE' },
-    { id:'TRX-016',  timestamp:'2026-05-20T12:00:00.000Z', description:'Fore Coffee',                             amount:  53600, source:'ShopeePay',   type:'DEBIT',  category:'FOOD & BEVERAGE' },
-    { id:'TRX-015',  timestamp:'2026-05-18T11:00:00.000Z', description:'Fore Coffee',                             amount:  52000, source:'ShopeePay',   type:'DEBIT',  category:'FOOD & BEVERAGE' },
-    { id:'TRX-014',  timestamp:'2026-05-14T10:00:00.000Z', description:'BP PERDATAM PANCORAN',                    amount:  40020, source:'ShopeePay',   type:'DEBIT',  category:'FOOD & BEVERAGE' },
-    { id:'TRX-013',  timestamp:'2026-05-12T09:00:00.000Z', description:'LWS SYAHDAN',                             amount:  10000, source:'ShopeePay',   type:'DEBIT',  category:'FOOD & BEVERAGE' },
-    { id:'TRX-012',  timestamp:'2026-05-11T14:00:00.000Z', description:'AFM BP PERDATAM',                         amount:  10000, source:'ShopeePay',   type:'DEBIT',  category:'FOOD & BEVERAGE' },
-    { id:'TRX-011',  timestamp:'2026-05-09T13:00:00.000Z', description:'QRIS PC TO32 DEWI SA',                    amount:  20000, source:'ShopeePay',   type:'DEBIT',  category:'FOOD & BEVERAGE' },
-    { id:'TRX-010',  timestamp:'2026-05-08T12:00:00.000Z', description:'QRIS IDM T1NY ANGGREK CA',                amount:  65000, source:'ShopeePay',   type:'DEBIT',  category:'FOOD & BEVERAGE' },
-    { id:'TRX-009',  timestamp:'2026-05-08T11:00:00.000Z', description:'jagocoffee.com/',                         amount:  10000, source:'ShopeePay',   type:'DEBIT',  category:'FOOD & BEVERAGE' },
-    { id:'TRX-008',  timestamp:'2026-05-08T09:50:00.000Z', description:'Dividen BBRI',                            amount: 209000, source:'BCA Mobile',  type:'CREDIT', category:'INCOME' },
-    { id:'TRX-008B', timestamp:'2026-05-07T10:00:00.000Z', description:'QR POINT COFFEE TJ93 CISA',              amount:  17500, source:'ShopeePay',   type:'DEBIT',  category:'FOOD & BEVERAGE' },
-    { id:'TRX-007',  timestamp:'2026-05-07T09:02:00.000Z', description:'Dividen SIDO',                            amount: 150000, source:'BCA Mobile',  type:'CREDIT', category:'INCOME' },
-    { id:'TRX-008A', timestamp:'2026-05-04T09:00:00.000Z', description:'QRIS PC TZGU SYNTHESIS HU',              amount:  43000, source:'ShopeePay',   type:'DEBIT',  category:'FOOD & BEVERAGE' },
-    { id:'TRX-006',  timestamp:'2026-05-01T10:15:00.000Z', description:'Uang bulanan',                           amount:1000000, source:'Cash',         type:'CREDIT', category:'INCOME' },
-    { id:'TRX-005',  timestamp:'2026-04-29T15:43:00.000Z', description:'Pembelian Grinder Timemore S3',          amount:1674000, source:'Mandiri Livin',type:'DEBIT',  category:'EQUIPMENT' },
-    { id:'TRX-004',  timestamp:'2026-04-26T17:15:00.000Z', description:'Ganti alat Mapala Carabiner Delta William',amount:720000,source:'PayLater',     type:'DEBIT',  category:'PAYLATER' },
-    { id:'TRX-003',  timestamp:'2026-04-26T16:43:00.000Z', description:'Ganti alat Mapala Petzl Reverso',        amount: 400000, source:'PayLater',     type:'DEBIT',  category:'PAYLATER' },
-    { id:'TRX-002',  timestamp:'2026-04-05T14:30:00.000Z', description:'Beli Saham SIDO',                        amount: 500000, source:'BCA Mobile',  type:'DEBIT',  category:'INVESTMENT' },
-    { id:'TRX-001',  timestamp:'2026-04-03T11:20:00.000Z', description:'Beli Saham BBRI',                        amount:1000000, source:'BCA Mobile',  type:'DEBIT',  category:'INVESTMENT' },
-  ]);
+  const [transactions, setTransactions] = useState<any[]>([]);
+
+  // ── Supabase Data Fetching ──
+  useEffect(() => {
+    if (!user) return;
+    const fetchData = async () => {
+      // Fetch Profile
+      const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      if (p) {
+        const loadedProfile = {
+          fullName: p.full_name || user.user_metadata?.full_name || '',
+          nickname: p.nickname || '',
+          phone: p.phone || '',
+          email: user.email || '',
+          address: p.address || ''
+        };
+        setProfile(loadedProfile);
+        setTempProfile(loadedProfile);
+        setCurrentCash(p.current_cash || 0);
+      } else {
+        // Fallback for new users before trigger runs
+        setProfile(prev => ({ ...prev, fullName: user.user_metadata?.full_name || '', email: user.email || '' }));
+      }
+      
+      // Fetch Transactions
+      const { data: txs } = await supabase.from('transactions').select('*').eq('user_id', user.id).order('timestamp', { ascending: false });
+      if (txs) setTransactions(txs);
+    };
+    fetchData();
+  }, [user]);
 
   const [editingTx,    setEditingTx]    = useState<any | null>(null);
-  const [currentCash]                  = useState(5_450_500);
   const [newTxType,    setNewTxType]    = useState('DEBIT');
   const [newTxAmount,  setNewTxAmount]  = useState('');
   const [newTxDesc,    setNewTxDesc]    = useState('');
@@ -244,24 +242,58 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
   }, [transactions]);
 
   /* ── Handlers ── */
-  const handleAddTransaction = () => {
-    if (!newTxAmount || !newTxDesc) return;
-    setTransactions([{
-      id: `TRX-${Math.floor(Math.random()*10000)}`,
+  const handleAddTransaction = async () => {
+    if (!newTxAmount || !newTxDesc || !user) return;
+    
+    const newTx = {
+      user_id: user.id,
       timestamp: new Date().toISOString(),
       description: newTxDesc.toUpperCase(),
       amount: Number(newTxAmount),
       source: newTxCategory === 'PAYLATER' ? 'PayLater' : 'Account Master',
       type: newTxType,
       category: newTxType === 'CREDIT' ? 'INCOME' : newTxCategory,
-    }, ...transactions]);
+    };
+    
+    // Insert to DB
+    const { data, error } = await supabase.from('transactions').insert([newTx]).select().single();
+    if (!error && data) {
+      setTransactions([data, ...transactions]);
+    }
+    
     setNewTxAmount(''); setNewTxDesc(''); setNewTxType('DEBIT');
   };
-  const saveEditedTransaction = () => {
-    setTransactions(transactions.map(t => t.id === editingTx.id ? editingTx : t));
+  
+  const saveEditedTransaction = async () => {
+    if (!editingTx) return;
+    const { error } = await supabase.from('transactions').update({
+      description: editingTx.description,
+      amount: editingTx.amount,
+      source: editingTx.source,
+      type: editingTx.type,
+      category: editingTx.category
+    }).eq('id', editingTx.id);
+    
+    if (!error) {
+      setTransactions(transactions.map(t => t.id === editingTx.id ? editingTx : t));
+    }
     setEditingTx(null);
   };
-  const saveProfile = () => { setProfile(tempProfile); setIsEditingProfile(false); };
+  
+  const saveProfile = async () => {
+    if (!user) return;
+    const { error } = await supabase.from('profiles').update({
+      full_name: tempProfile.fullName,
+      nickname: tempProfile.nickname,
+      phone: tempProfile.phone,
+      address: tempProfile.address
+    }).eq('id', user.id);
+    
+    if (!error) {
+      setProfile(tempProfile);
+    }
+    setIsEditingProfile(false);
+  };
 
   /* ── Chat handler ── */
   const sendChat = async () => {
@@ -300,18 +332,23 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
   };
 
   /* ── FAB quick-record handler ── */
-  const handleFabRecord = () => {
-    if (!fabAmount || !fabDesc) return;
+  const handleFabRecord = async () => {
+    if (!fabAmount || !fabDesc || !user) return;
     const newTx = {
-      id:          `TRX-Q${Math.floor(Math.random()*100000)}`,
-      timestamp:   new Date().toISOString(),
+      user_id: user.id,
+      timestamp: new Date().toISOString(),
       description: fabDesc.toUpperCase(),
-      amount:      Number(fabAmount),
-      source:      fabSource,
-      type:        fabType,
-      category:    fabType === 'CREDIT' ? 'INCOME' : fabCategory,
+      amount: Number(fabAmount),
+      source: fabSource,
+      type: fabType,
+      category: fabType === 'CREDIT' ? 'INCOME' : fabCategory,
     };
-    setTransactions(prev => [newTx, ...prev]);
+    
+    const { data, error } = await supabase.from('transactions').insert([newTx]).select().single();
+    if (!error && data) {
+      setTransactions(prev => [data, ...prev]);
+    }
+    
     setFabAmount(''); setFabDesc(''); setFabOpen(false);
   };
 
