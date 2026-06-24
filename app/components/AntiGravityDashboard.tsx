@@ -102,6 +102,34 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
   const [chatInput,    setChatInput]    = useState('');
   const [chatLoading,  setChatLoading]  = useState(false);
 
+  /* Assessment state */
+  const [aiAssessment, setAiAssessment] = useState<any>(null);
+  const [loadingAssessment, setLoadingAssessment] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === 'ANALYTICS' && !aiAssessment && !loadingAssessment) {
+      const fetchAssessment = async () => {
+        setLoadingAssessment(true);
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const res = await fetch('/api/assessment', {
+            method: 'POST',
+            headers: { 'Authorization': session?.access_token ? `Bearer ${session.access_token}` : '' }
+          });
+          const data = await res.json();
+          if (data && data.diagnostics) {
+            setAiAssessment(data);
+          }
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setLoadingAssessment(false);
+        }
+      };
+      fetchAssessment();
+    }
+  }, [activeTab, aiAssessment, loadingAssessment]);
+
   /* Floating quick-record FAB state */
   const [fabOpen,      setFabOpen]      = useState(false);
   const [fabType,      setFabType]      = useState<'DEBIT'|'CREDIT'>('DEBIT');
@@ -1067,53 +1095,65 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
             {/* ── QUANTITATIVE AI ANALYST (strategic recommendations) ── */}
             <div style={{ background:'#0f0f17', border:'1px solid #1e1e2e', borderTop:'2px solid #7b61ff', borderRadius:8, padding:28, marginBottom:16, display:'flex', gap:20 }}>
               <div style={{ width:56, height:56, background:'rgba(123,97,255,0.12)', border:'1px solid rgba(123,97,255,0.4)', borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>👔</div>
-              <div>
+              <div style={{ flex: 1 }}>
                 <h2 className={spaceMono.className} style={{ fontSize:16, fontWeight:700, color:'#f8fafc', textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:4 }}>Quantitative AI Analyst</h2>
-                <p style={{ fontSize:11, color:'#475569', letterSpacing:'0.06em', marginBottom:12 }}>Holistic 10-Step Ahead Strategy · Binusian Jakarta Cohort</p>
-                <span style={{ fontSize:9, padding:'3px 10px', border:'1px solid rgba(123,97,255,0.5)', color:'#7b61ff', background:'rgba(123,97,255,0.1)', letterSpacing:'0.12em', textTransform:'uppercase', borderRadius:3 }}>🤖 AI-Generated · Live Data</span>
+                <p style={{ fontSize:11, color:'#475569', letterSpacing:'0.06em', marginBottom:12 }}>Holistic 10-Step Ahead Strategy · Personalized Assessment</p>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                  <span style={{ fontSize:9, padding:'3px 10px', border:'1px solid rgba(123,97,255,0.5)', color:'#7b61ff', background:'rgba(123,97,255,0.1)', letterSpacing:'0.12em', textTransform:'uppercase', borderRadius:3 }}>🤖 AI-Generated · Live Data</span>
+                  {!aiAssessment && !loadingAssessment && (
+                    <button onClick={() => setAiAssessment(null)} style={{ background:'transparent', border:'1px solid #1e1e2e', color:'#94a3b8', fontSize:10, padding:'4px 10px', borderRadius:4, cursor:'pointer' }}>Generate Assessment</button>
+                  )}
+                  {aiAssessment && (
+                    <button onClick={() => setAiAssessment(null)} style={{ background:'transparent', border:'1px solid #1e1e2e', color:'#94a3b8', fontSize:10, padding:'4px 10px', borderRadius:4, cursor:'pointer' }}>Refresh</button>
+                  )}
+                </div>
               </div>
             </div>
-            {[
-              { icon:'⚡', title:'Macro Diagnostic: The Liquidity Trap',
-                content: <><p style={{marginBottom:10}}>Halo <strong style={{color:'#7b61ff'}}>{profile.nickname}</strong>. Anda memegang <em>Current Cash</em> sebesar <strong style={{color:'#00d4ff'}}>Rp {currentCash.toLocaleString('id-ID')}</strong>, namun mengakumulasi PayLater sebesar <strong style={{color:'#ef4444'}}>Rp {fin.paylaterDebt.toLocaleString('id-ID')}</strong> untuk alat Mapala.</p><p>Ini adalah <strong style={{color:'#f59e0b'}}>cognitive dissonance</strong> klasik dalam Behavioral Finance. Compound interest dari PayLater akan menggerus passive income dividen Anda (Rp {fin.totalIncome.toLocaleString('id-ID')}) dari SIDO dan BBRI secara eksponensial.</p></> },
-              { icon:'📊', title:'Micro Assessment & CAPEX',
-                content: <><p style={{marginBottom:10}}>Pembelian Grinder Timemore S3 (<strong style={{color:'#f59e0b'}}>Rp 1.674.000</strong>) adalah CAPEX agresif. ROI positif hanya dalam 4 bulan <em>jika</em> Anda berhenti ngopi di kafe.</p><p>Jika kebiasaan ke kafe Kemanggisan tetap berlanjut, pembelian grinder ini menjadi <strong style={{color:'#ef4444'}}>sunk cost</strong> murni, menekan Month Remaining menjadi <strong style={{color:'#00d4ff'}}>Rp {fin.monthRemaining.toLocaleString('id-ID')}</strong>.</p></> },
-            ].map(section => (
-              <div key={section.title} style={{ background:'#0f0f17', border:'1px solid #1e1e2e', borderRadius:8, padding:'20px 24px', marginBottom:12 }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor='#2d2d3d')}
-                onMouseLeave={e => (e.currentTarget.style.borderColor='#1e1e2e')}>
-                <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14, paddingBottom:12, borderBottom:'1px solid #1e1e2e' }}>
-                  <span style={{ fontSize:18 }}>{section.icon}</span>
-                  <span style={{ fontSize:14, fontWeight:700, color:'#f8fafc', letterSpacing:'0.02em', textTransform:'uppercase' }}>{section.title}</span>
-                </div>
-                <div style={{ fontSize:12, lineHeight:1.85, color:'#94a3b8' }}>{section.content}</div>
+
+            {loadingAssessment ? (
+              <div style={{ padding: 40, textAlign: 'center' }}>
+                <div style={{ width:40, height:40, border:'3px solid rgba(123,97,255,0.2)', borderTopColor:'#7b61ff', borderRadius:'50%', animation:'spin 1s linear infinite', margin:'0 auto 16px' }} />
+                <p className={spaceMono.className} style={{ color:'#7b61ff', fontSize:12, letterSpacing:'0.1em' }}>MENGANALISIS PORTOFOLIO...</p>
+                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
               </div>
-            ))}
-            <div style={{ background:'#0f0f17', border:'1px solid #1e1e2e', borderRadius:8, padding:'20px 24px' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:18, paddingBottom:12, borderBottom:'1px solid #1e1e2e' }}>
-                <span style={{ fontSize:18 }}>🎯</span>
-                <span style={{ fontSize:14, fontWeight:700, color:'#f8fafc', textTransform:'uppercase', letterSpacing:'0.02em' }}>Strategic Recommendations</span>
-              </div>
-              <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
-                {[
-                  { n:'01', title:'Immediate Debt Liquidation', desc:`Lunasi PayLater Rp ${fin.paylaterDebt.toLocaleString('id-ID')} sekarang dari Current Cash. Bunga PayLater selalu lebih tinggi dari yield investasi apapun.` },
-                  { n:'02', title:'DRIP Sintetis', desc:'Dividen SIDO + BBRI (Rp 359.000) harus di-sweep langsung ke RDN Stockbit. Jangan biarkan masuk ke rekening transaksional.' },
-                  { n:'03', title:'Coffee Arbitrage Execution', desc:'Grinder sudah dibeli. Zero coffee shop hopping sisa semester. Hemat min. Rp 280.000/bulan.' },
-                  { n:'04', title:'Freeze CAPEX Hobi 90 Hari', desc:'Total alat hobi sudah >Rp 2.7M. Bekukan semua pembelian peralatan sampai rasio tabungan kembali >40%.' },
-                ].map(step => (
-                  <div key={step.n} style={{ display:'flex', gap:14 }}>
-                    <span className={spaceMono.className} style={{ fontSize:12, fontWeight:700, color:'#00d4ff', flexShrink:0, paddingTop:1 }}>{step.n}</span>
-                    <div>
-                      <p style={{ fontSize:13, fontWeight:700, color:'#f8fafc', marginBottom:4 }}>{step.title}</p>
-                      <p style={{ fontSize:11, color:'#64748b', lineHeight:1.7 }}>{step.desc}</p>
+            ) : aiAssessment ? (
+              <>
+                {aiAssessment.diagnostics?.map((section: any) => (
+                  <div key={section.title} style={{ background:'#0f0f17', border:'1px solid #1e1e2e', borderRadius:8, padding:'20px 24px', marginBottom:12 }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor='#2d2d3d')}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor='#1e1e2e')}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14, paddingBottom:12, borderBottom:'1px solid #1e1e2e' }}>
+                      <span style={{ fontSize:18 }}>{section.icon}</span>
+                      <span style={{ fontSize:14, fontWeight:700, color:'#f8fafc', letterSpacing:'0.02em', textTransform:'uppercase' }}>{section.title}</span>
                     </div>
+                    <div style={{ fontSize:12, lineHeight:1.85, color:'#94a3b8' }} dangerouslySetInnerHTML={{ __html: section.content }}></div>
                   </div>
                 ))}
-              </div>
-              <div style={{ marginTop:20, paddingTop:16, borderTop:'1px solid #1e1e2e', borderLeft:'3px solid #7b61ff', paddingLeft:16 }}>
-                <p style={{ fontSize:11, fontStyle:'italic', color:'#64748b', lineHeight:1.8 }}>&ldquo;Neraca keuangan adalah cermin kedewasaan. Lunasi PayLater sekarang, biarkan dividen bekerja untuk Anda di pasar modal.&rdquo;</p>
-              </div>
-            </div>
+                
+                <div style={{ background:'#0f0f17', border:'1px solid #1e1e2e', borderRadius:8, padding:'20px 24px' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:18, paddingBottom:12, borderBottom:'1px solid #1e1e2e' }}>
+                    <span style={{ fontSize:18 }}>🎯</span>
+                    <span style={{ fontSize:14, fontWeight:700, color:'#f8fafc', textTransform:'uppercase', letterSpacing:'0.02em' }}>Strategic Recommendations</span>
+                  </div>
+                  <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
+                    {aiAssessment.recommendations?.map((step: any) => (
+                      <div key={step.n} style={{ display:'flex', gap:14 }}>
+                        <span className={spaceMono.className} style={{ fontSize:12, fontWeight:700, color:'#00d4ff', flexShrink:0, paddingTop:1 }}>{step.n}</span>
+                        <div>
+                          <p style={{ fontSize:13, fontWeight:700, color:'#f8fafc', marginBottom:4 }}>{step.title}</p>
+                          <p style={{ fontSize:11, color:'#64748b', lineHeight:1.7 }}>{step.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {aiAssessment.quote && (
+                    <div style={{ marginTop:20, paddingTop:16, borderTop:'1px solid #1e1e2e', borderLeft:'3px solid #7b61ff', paddingLeft:16 }}>
+                      <p style={{ fontSize:11, fontStyle:'italic', color:'#64748b', lineHeight:1.8 }}>&ldquo;{aiAssessment.quote}&rdquo;</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : null}
           </div>
         )}
 
