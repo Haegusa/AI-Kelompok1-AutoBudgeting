@@ -372,7 +372,9 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
           BINUSIAN-BUDGETING
         </span>
 
-        <div style={{ display:'flex', gap:2, marginLeft:8 }}>
+        <div style={{ flex:1 }} />
+
+        <div style={{ display:'flex', gap:2 }}>
           {NAV_ITEMS.map(item => {
             const active = activeTab === item.id;
             return (
@@ -429,7 +431,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
       </nav>
 
       {/* ── MAIN CONTENT ── */}
-      <main className="w-full px-4 md:px-8 py-7 md:pb-14 max-w-[1140px] mx-auto flex-1">
+      <main className="w-full px-4 md:px-8 py-7 md:pb-14 flex-1" style={{ maxWidth: 1140, margin: '0 auto' }}>
 
         {/* ════════════════ DASHBOARD TAB ════════════════ */}
         {activeTab === 'DASHBOARD' && (
