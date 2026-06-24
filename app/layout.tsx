@@ -26,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${spaceMono.variable} ${dmSans.variable}`}>
-      <body>{children}</body>
+      <body className="overflow-x-hidden w-full">{children}</body>
     </html>
   );
 }
