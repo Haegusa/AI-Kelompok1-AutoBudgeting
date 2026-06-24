@@ -459,390 +459,209 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
               </div>
             </div>
 
-            {/* BUDGET LIMIT BANNER ─ current month only ─ */}
+            {/* ── MONTHLY BUDGET BAR ── */}
             {(() => {
               const { isOver, pct, remaining, spent, label } = currentMonthStats;
+              const todayTxs = transactions.filter(t => {
+                const d = new Date(t.timestamp);
+                const now = new Date();
+                return d.toDateString() === now.toDateString() && t.type === 'DEBIT';
+              });
+              const todaySpentLocal = todayTxs.reduce((a: number, t: any) => a + t.amount, 0);
+              const remainingDaysLocal = (() => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth()+1, 0).getDate() - n.getDate() + 1; })();
+              const avgDailySpendLocal = transactions.length > 0 ? currentMonthStats.spent / new Date().getDate() : 0;
+              const bisaJajanHariLocal = avgDailySpendLocal > 0 ? Math.floor(currentMonthStats.remaining / avgDailySpendLocal) : remainingDaysLocal;
+
               return (
-                <div style={{
-                  marginBottom: 14,
-                  background: isOver ? 'rgba(239,68,68,0.06)' : 'rgba(0,212,255,0.04)',
-                  border: `1px solid ${isOver ? '#ef4444' : '#1e1e2e'}`,
-                  borderLeft: `4px solid ${isOver ? '#ef4444' : '#00d4ff'}`,
-                  borderRadius: 6, padding: '14px 20px',
-                  display: 'flex', alignItems: 'center', gap: 20,
-                  boxShadow: isOver ? '0 0 20px rgba(239,68,68,0.15)' : 'none',
-                  animation: isOver ? 'budget-pulse 2s ease-in-out infinite' : 'none',
-                }}>
-                  <div style={{ fontSize: 22, flexShrink: 0 }}>{isOver ? '🚨' : '💰'}</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                      <span style={{ fontSize: 9, color: isOver ? '#ef4444' : '#475569', letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 700 }}>
-                        MONTHLY BUDGET · {label}
-                      </span>
-                      <span className={spaceMono.className} style={{ fontSize: 11, color: isOver ? '#ef4444' : '#00d4ff', fontWeight: 700 }}>
-                        Rp {spent.toLocaleString('id-ID')} / Rp {MONTHLY_BUDGET.toLocaleString('id-ID')}
-                      </span>
-                    </div>
-                    <div style={{ height: 5, background: '#1e1e2e', borderRadius: 3, overflow: 'hidden' }}>
-                      <div style={{
-                        height: '100%', width: `${pct}%`,
-                        background: isOver ? 'linear-gradient(90deg,#ef4444,#dc2626)' : pct > 70 ? 'linear-gradient(90deg,#f59e0b,#ef4444)' : 'linear-gradient(90deg,#00d4ff,#10b981)',
-                        borderRadius: 3, transition: 'width 0.5s ease',
-                      }} />
-                    </div>
-                  </div>
-                  <div style={{ flexShrink: 0, textAlign: 'right' }}>
-                    {isOver ? (
-                      <>
-                        <div className={spaceMono.className} style={{ fontSize: 12, fontWeight: 700, color: '#ef4444', marginBottom: 2 }}>+Rp {Math.abs(remaining).toLocaleString('id-ID')}</div>
-                        <div style={{ fontSize: 8, color: '#ef4444', letterSpacing: '0.1em', border: '1px solid #ef4444', padding: '2px 8px', borderRadius: 3, background: 'rgba(239,68,68,0.12)', whiteSpace: 'nowrap' }}>⚠ LIMIT TERLAMPAUI</div>
-                      </>
-                    ) : (
-                      <>
-                        <div className={spaceMono.className} style={{ fontSize: 12, fontWeight: 700, color: '#10b981', marginBottom: 2 }}>Rp {remaining.toLocaleString('id-ID')}</div>
-                        <div style={{ fontSize: 8, color: '#10b981', letterSpacing: '0.1em', border: '1px solid #10b981', padding: '2px 8px', borderRadius: 3, background: 'rgba(16,185,129,0.1)', whiteSpace: 'nowrap' }}>● SISA BULAN INI</div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* KPI CARDS */}
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:16 }}>
-              {[
-                { label:'PAYLATER',        value:`Rp ${fin.paylaterDebt.toLocaleString('id-ID')}`,  color:'#ef4444', badge:'● ACTIVE DEBT',    badgeCol:'#ef4444' },
-                { label:'CURRENT CASH',    value:`Rp ${currentCash.toLocaleString('id-ID')}`,       color:'#00d4ff', badge:'● LIQUID',          badgeCol:'#10b981' },
-                { label:'INCOME ADDED',    value:`+ Rp ${fin.totalIncome.toLocaleString('id-ID')}`, color:'#10b981', badge:'DIVIDEN + GAJI',    badgeCol:'#a855f7' },
-                { label:'WORTH REMAINING', value:`Rp ${fin.monthRemaining.toLocaleString('id-ID')}`,color: fin.monthRemaining < 0 ? '#ef4444' : '#f8fafc', badge: fin.monthRemaining >= 0 ? '● ON TRACK' : '● OVERRUN', badgeCol: fin.monthRemaining >= 0 ? '#10b981' : '#ef4444' },
-              ].map(card => (
-                <div key={card.label} style={{ background:'#0f0f17', border:'1px solid #1e1e2e', borderTop:`2px solid ${card.color}`, padding:'16px 18px', borderRadius:6 }}>
-                  <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:8 }}>{card.label}</p>
-                  <p className={spaceMono.className} style={{ fontSize:17, fontWeight:700, color:card.color, lineHeight:1, marginBottom:10 }}>{card.value}</p>
-                  <span style={{ fontSize:8, padding:'2px 9px', color:card.badgeCol, border:`1px solid ${card.badgeCol}`, background:`${card.badgeCol}18`, letterSpacing:'0.1em', borderRadius:2 }}>{card.badge}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* MIDDLE ROW: Allocation Breakdown | Short-Analysis */}
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
-
-              {/* ── ALLOCATION BREAKDOWN ── */}
-              <div style={{ background:'#0f0f17', border:'1px solid #1e1e2e', borderRadius:6, padding:'18px 20px' }}>
-                <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:16 }}>ALLOCATION BREAKDOWN</p>
-
-                <div style={{ display:'flex', gap:18, alignItems:'center', marginBottom:16 }}>
-                  {/* SVG Donut */}
-                  <div style={{ position:'relative', width:140, height:140, flexShrink:0 }}>
-                    <svg width="140" height="140" viewBox="0 0 140 140" style={{ display:'block', transform:'rotate(-90deg)' }}>
-                      <circle cx="70" cy="70" r="52" fill="none" stroke="#1e1e2e" strokeWidth="18" />
-                      {!loading && (() => {
-                        const R = 52; const C = 2 * Math.PI * R;
-                        let off = 0;
-                        return fin.categoryData.map(cat => {
-                          const dash = (cat.percentage / 100) * C;
-                          const el = (
-                            <circle key={cat.name} cx="70" cy="70" r={R} fill="none"
-                              stroke={cat.color} strokeWidth="18"
-                              strokeDasharray={`${dash} ${C - dash}`}
-                              strokeDashoffset={-off} strokeLinecap="butt"
-                            />
-                          );
-                          off += dash; return el;
-                        });
-                      })()}
-                    </svg>
-                    <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', textAlign:'center', pointerEvents:'none' }}>
-                      <div className={spaceMono.className} style={{ fontSize:11, fontWeight:700, color:'#f8fafc', whiteSpace:'nowrap' }}>
-                        Rp {(fin.totalAllocation/1_000_000).toFixed(2)}M
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Category bars legend */}
-                  <div style={{ flex:1, display:'flex', flexDirection:'column', gap:7 }}>
-                    {fin.categoryData.map(cat => (
-                      <div key={cat.name}>
-                        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:3 }}>
-                          <span style={{ fontSize:9, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.08em' }}>{cat.name}</span>
-                          <span className={spaceMono.className} style={{ fontSize:9, color:cat.color, fontWeight:700 }}>{cat.percentage}%</span>
-                        </div>
-                        <div style={{ height:3, background:'#1e1e2e', borderRadius:2, overflow:'hidden' }}>
-                          <div style={{ height:'100%', width:`${cat.percentage}%`, background:cat.color, borderRadius:2, transition:'width 0.5s ease' }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Category pick chips */}
-                <div style={{ borderTop:'1px solid #1e1e2e', paddingTop:14 }}>
-                  <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom: expandedCategory ? 10 : 0 }}>
-                    {fin.categoryData.map(cat => {
-                      const active = expandedCategory === cat.name;
-                      return (
-                        <button key={cat.name} onClick={() => setExpandedCategory(active ? null : cat.name)} style={{
-                          display:'flex', alignItems:'center', gap:5, padding:'4px 10px',
-                          background: active ? `${cat.color}18` : '#13131c',
-                          border: `1px solid ${active ? cat.color : '#252530'}`,
-                          borderRadius:4, cursor:'pointer',
-                          boxShadow: active ? `0 0 8px ${cat.color}30` : 'none',
-                          transition:'all 0.15s',
-                        }}>
-                          <span style={{ width:6, height:6, borderRadius:'50%', background:cat.color, display:'inline-block', flexShrink:0 }} />
-                          <span className={spaceMono.className} style={{ fontSize:8, color: active ? cat.color : '#64748b', textTransform:'uppercase', letterSpacing:'0.08em' }}>
-                            {cat.name} {cat.percentage}%
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {expandedCategory && (
-                    <div style={{ display:'flex', flexDirection:'column', gap:5, marginTop:4 }}>
-                      {expandedCategory === 'CASH' ? (
-                        <div style={{ display:'flex', justifyContent:'space-between', padding:'8px 12px', background:'rgba(255,255,255,0.03)', borderRadius:4, border:'1px solid #1e1e2e' }}>
-                          <span style={{ fontSize:11, color:'#94a3b8' }}>Liquid Cash Reserve</span>
-                          <span className={spaceMono.className} style={{ fontWeight:700, color:CATEGORY_COLORS['CASH'], fontSize:11 }}>Rp {currentCash.toLocaleString('id-ID')}</span>
-                        </div>
-                      ) : (
-                        transactions.filter(t => t.category === expandedCategory && t.type === 'DEBIT').map((t, i) => (
-                          <div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'8px 12px', background:'rgba(255,255,255,0.03)', borderRadius:4, border:'1px solid #1e1e2e' }}>
-                            <span style={{ fontSize:11, color:'#94a3b8', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'60%' }}>{t.description}</span>
-                            <span className={spaceMono.className} style={{ fontWeight:700, color:CATEGORY_COLORS[expandedCategory], fontSize:11, flexShrink:0 }}>Rp {t.amount.toLocaleString('id-ID')}</span>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* ── SHORT-ANALYSIS ── */}
-              <div style={{ background:'#0f0f17', border:'1px solid #1e1e2e', borderRadius:6, padding:'18px 20px', display:'flex', flexDirection:'column', position:'relative' }}>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
-                  <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase' }}>SHORT-ANALYSIS</p>
-                  <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                    <span style={{ fontSize:8, padding:'2px 9px', color:'#a855f7', border:'1px solid #a855f7', background:'rgba(168,85,247,0.1)', letterSpacing:'0.1em', borderRadius:2 }}>AI-GENERATED</span>
-                    {/* Chat bubble button */}
-                    <button
-                      onClick={() => setChatOpen(o => !o)}
-                      title="Chat with HAEGUSA-AI"
-                      style={{
-                        width:30, height:30, borderRadius:'50%', border:'1px solid #00d4ff',
-                        background: chatOpen ? '#00d4ff' : 'rgba(0,212,255,0.12)',
-                        color: chatOpen ? '#000' : '#00d4ff',
-                        cursor:'pointer', fontSize:14, display:'flex', alignItems:'center', justifyContent:'center',
-                        boxShadow: chatOpen ? '0 0 12px rgba(0,212,255,0.5)' : 'none',
-                        transition:'all 0.2s', flexShrink:0,
-                      }}
-                    >🤖</button>
-                  </div>
-                </div>
-
-                {/* Chat panel */}
-                {chatOpen && (
+                <>
+                  {/* Monthly Budget Bar */}
                   <div style={{
-                    position:'absolute', top:0, left:0, right:0, bottom:0,
-                    background:'#0c0c14', borderRadius:6, border:'1px solid rgba(0,212,255,0.3)',
-                    display:'flex', flexDirection:'column', zIndex:50, overflow:'hidden',
-                  }}>
-                    {/* Chat header */}
-                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom:'1px solid #1e1e2e', background:'#0f0f17', flexShrink:0 }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                        <span style={{ width:8, height:8, borderRadius:'50%', background:'#00d4ff', display:'inline-block', boxShadow:'0 0 6px #00d4ff' }} />
-                        <span className={spaceMono.className} style={{ fontSize:10, color:'#00d4ff', letterSpacing:'0.1em' }}>HAEGUSA-AI · Gemini Flash</span>
+                    marginBottom: 16,
+                    background: isOver ? 'rgba(239,68,68,0.06)' : 'rgba(0,212,255,0.04)',
+                    border: `1px solid ${isOver ? '#ef4444' : '#1e1e2e'}`,
+                    borderLeft: `4px solid ${isOver ? '#ef4444' : '#00d4ff'}`,
+                    borderRadius: 6, padding: '14px 20px',
+                    display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap',
+                    boxShadow: isOver ? '0 0 20px rgba(239,68,68,0.15)' : 'none',
+                    animation: isOver ? 'budget-pulse 2s ease-in-out infinite' : 'none',
+                    transition: 'all 0.2s',
+                  }}
+                    onMouseEnter={e => { if (!isOver) (e.currentTarget as HTMLDivElement).style.boxShadow='0 0 16px rgba(0,212,255,0.12)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = isOver ? '0 0 20px rgba(239,68,68,0.15)' : 'none'; }}
+                  >
+                    <div style={{ fontSize: 22, flexShrink: 0 }}>{isOver ? '🚨' : '💰'}</div>
+                    <div style={{ flex: 1, minWidth: 200 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                        <span style={{ fontSize: 9, color: isOver ? '#ef4444' : '#475569', letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 700 }}>
+                          MONTHLY BUDGET · {label}
+                        </span>
+                        <span className={spaceMono.className} style={{ fontSize: 11, color: isOver ? '#ef4444' : '#00d4ff', fontWeight: 700 }}>
+                          Rp {spent.toLocaleString('id-ID')} / Rp {MONTHLY_BUDGET.toLocaleString('id-ID')}
+                        </span>
                       </div>
-                      <button onClick={() => setChatOpen(false)} style={{ background:'none', border:'none', color:'#475569', cursor:'pointer', fontSize:16, lineHeight:1 }}>x</button>
-                    </div>
-                    {/* Messages */}
-                    <div style={{ flex:1, overflowY:'auto', padding:'12px 14px', display:'flex', flexDirection:'column', gap:8 }}>
-                      {chatMsgs.length === 0 && (
-                        <div style={{ textAlign:'center', padding:'20px 10px' }}>
-                          <div style={{ fontSize:24, marginBottom:8 }}>🤖</div>
-                          <p style={{ fontSize:10, color:'#475569', lineHeight:1.6 }}>Halo! Saya <strong style={{color:'#00d4ff'}}>HAEGUSA-AI</strong>.<br/>Tanya apa saja soal keuangan kamu.</p>
-                          {["Budget bulan ini gimana?","Saran untuk kurangi pengeluaran?","Analisis utang PayLater ku."].map(q => (
-                            <button key={q} onClick={() => { setChatInput(q); }} style={{
-                              display:'block', width:'100%', margin:'4px 0', padding:'6px 10px',
-                              background:'rgba(0,212,255,0.06)', border:'1px solid rgba(0,212,255,0.2)',
-                              color:'#64748b', borderRadius:4, cursor:'pointer', fontSize:9, textAlign:'left',
-                              letterSpacing:'0.04em',
-                            }}>{q}</button>
-                          ))}
-                        </div>
-                      )}
-                      {chatMsgs.map((m, i) => (
-                        <div key={i} style={{
-                          alignSelf: m.role==='user' ? 'flex-end' : 'flex-start',
-                          maxWidth:'85%',
-                          background: m.role==='user' ? 'rgba(0,212,255,0.12)' : '#13131c',
-                          border: `1px solid ${m.role==='user' ? 'rgba(0,212,255,0.3)' : '#1e1e2e'}`,
-                          borderRadius: m.role==='user' ? '12px 12px 0 12px' : '12px 12px 12px 0',
-                          padding:'8px 12px',
-                        }}>
-                          <p style={{ fontSize:11, color:'#e2e8f0', lineHeight:1.6, whiteSpace:'pre-wrap', margin:0 }}>{m.text}</p>
-                        </div>
-                      ))}
-                      {chatLoading && (
-                        <div style={{ alignSelf:'flex-start', padding:'8px 12px', background:'#13131c', border:'1px solid #1e1e2e', borderRadius:'12px 12px 12px 0' }}>
-                          <span style={{ fontSize:18, animation:'chat-dots 1.2s infinite' }}>⋯</span>
-                        </div>
-                      )}
-                    </div>
-                    {/* Input */}
-                    <div style={{ display:'flex', gap:6, padding:'10px 14px', borderTop:'1px solid #1e1e2e', flexShrink:0 }}>
-                      <input
-                        value={chatInput}
-                        onChange={e => setChatInput(e.target.value)}
-                        onKeyDown={e => e.key==='Enter' && !e.shiftKey && sendChat()}
-                        placeholder="Tanya soal keuangan kamu..."
-                        style={{
-                          flex:1, background:'#1a1a24', border:'1px solid #2d2d3d', borderRadius:6,
-                          padding:'8px 12px', color:'#f8fafc', fontSize:11, outline:'none',
-                        }}
-                      />
-                      <button
-                        onClick={sendChat}
-                        disabled={chatLoading}
-                        style={{
-                          padding:'8px 14px', background: chatLoading ? '#1e1e2e' : '#00d4ff',
-                          border:'none', borderRadius:6, color:'#000', fontWeight:700,
-                          fontSize:11, cursor: chatLoading ? 'not-allowed' : 'pointer',
-                        }}
-                      >↑</button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Normal content (hidden when chat open) */}
-                {!chatOpen && (
-                  <>
-                    <p style={{ fontSize:11, color:'#94a3b8', lineHeight:1.8, flex:1, marginBottom:16 }}>
-                      Injeksi dividen (<span style={{ color:'#00d4ff', fontWeight:700 }}>Rp {fin.totalIncome.toLocaleString('id-ID')}</span>) dan struktur portofolio fundamental menunjukkan pertumbuhan positif. Namun, likuiditas kamu terjebak dalam{' '}
-                      <em style={{ color:'#f59e0b' }}>disonansi kognitif</em>: memegang kas besar (<span style={{ color:'#00d4ff', fontWeight:700 }}>Rp {currentCash.toLocaleString('id-ID')}</span>) namun mengakumulasi{' '}
-                      <em>Accounts Payable</em> / PayLater berbunga tinggi (<span style={{ color:'#ef4444', fontWeight:700 }}>Rp {fin.paylaterDebt.toLocaleString('id-ID')}</span>) untuk pengeluaran non-produktif. Segera rekapitalisasi utang tersebut.
-                    </p>
-                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:14 }}>
-                      <div style={{ background:'#13131c', border:'1px solid #1e1e2e', padding:'12px 14px', borderRadius:4 }}>
-                        <div style={{ fontSize:18, marginBottom:4 }}>⚡</div>
-                        <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:4 }}>DEBT RATIO</p>
-                        <p className={spaceMono.className} style={{ fontSize:18, fontWeight:700, color:'#ef4444' }}>
-                          {fin.totalAllocation > 0 ? ((fin.paylaterDebt / fin.totalAllocation) * 100).toFixed(1) : '0.0'}%
-                        </p>
-                      </div>
-                      <div style={{ background:'#13131c', border:'1px solid #1e1e2e', padding:'12px 14px', borderRadius:4 }}>
-                        <div style={{ fontSize:18, marginBottom:4 }}>📈</div>
-                        <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:4 }}>INVEST GROWTH</p>
-                        <p className={spaceMono.className} style={{ fontSize:18, fontWeight:700, color:'#10b981' }}>+Rp {(fin.totalIncome / 1000).toFixed(0)}k</p>
-                      </div>
-                    </div>
-                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-                      <button onClick={() => setActiveTab('OPTIONS')} className={spaceMono.className} style={{ padding:'10px', background:'#13131c', border:'1px solid #2a2a38', color:'#f8fafc', fontSize:10, fontWeight:700, letterSpacing:'0.1em', cursor:'pointer', borderRadius:4 }}>
-                        REKAPITALISASI →
-                      </button>
-                      <button onClick={() => setActiveTab('ANALYTICS')} className={spaceMono.className} style={{ padding:'10px', background:'rgba(0,212,255,0.08)', border:'1px solid #00d4ff', color:'#00d4ff', fontSize:10, fontWeight:700, letterSpacing:'0.1em', cursor:'pointer', borderRadius:4 }}>
-                        LIHAT DETAIL
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* FINANCIAL PULSE */}
-            <div>
-              <p className={spaceMono.className} style={{ fontSize:9, color:'#334155', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:10 }}>
-                // FINANCIAL PULSE
-              </p>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12 }}>
-
-                {/* WORTH PROGRESS ─ uses currentMonthStats ─ */}
-                {(() => {
-                  const { isOver, pct, remaining, spent } = currentMonthStats;
-                  const barColor = isOver
-                    ? 'linear-gradient(90deg,#ef4444,#dc2626)'
-                    : pct > 70
-                      ? 'linear-gradient(90deg,#f59e0b,#ef4444)'
-                      : 'linear-gradient(90deg,#00d4ff,#a855f7)';
-                  return (
-                    <div style={{
-                      background: isOver ? 'rgba(239,68,68,0.05)' : '#0f0f17',
-                      border: `1px solid ${isOver ? '#ef4444' : '#1e1e2e'}`,
-                      borderRadius: 6, padding: '16px 18px',
-                      boxShadow: isOver ? '0 0 16px rgba(239,68,68,0.12)' : 'none',
-                      animation: isOver ? 'budget-pulse 2s ease-in-out infinite' : 'none',
-                    }}>
-                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: 12 }}>
-                        <p style={{ fontSize:9, color: isOver ? '#ef4444' : '#475569', letterSpacing:'0.14em', textTransform:'uppercase' }}>WORTH PROGRESS</p>
-                        {isOver && <span style={{ fontSize:8, padding:'2px 8px', color:'#ef4444', border:'1px solid #ef4444', background:'rgba(239,68,68,0.1)', borderRadius:3, letterSpacing:'0.08em' }}>⚠ OVER LIMIT</span>}
-                      </div>
-                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
-                        <span className={spaceMono.className} style={{ fontSize:9, color:'#475569', letterSpacing:'0.08em' }}>BUDGET USED</span>
-                        <span className={spaceMono.className} style={{ fontSize:9, color: isOver ? '#ef4444' : '#00d4ff', fontWeight:700 }}>{pct}%</span>
-                      </div>
-                      <div style={{ height:6, background:'#1e1e2e', borderRadius:3, overflow:'hidden', marginBottom:16 }}>
-                        <div style={{ height:'100%', width:`${pct}%`, background: barColor, borderRadius:3, transition:'width 0.5s ease' }} />
-                      </div>
-                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-                        <div>
-                          <p style={{ fontSize:8, color:'#475569', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:4 }}>DIGUNAKAN</p>
-                          <p className={spaceMono.className} style={{ fontSize:12, fontWeight:700, color: isOver ? '#ef4444' : '#f59e0b' }}>Rp {(spent/1000).toFixed(0)}k</p>
-                        </div>
-                        <div>
-                          <p style={{ fontSize:8, color:'#475569', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:4 }}>{isOver ? 'KELEBIHAN' : 'TERSISA'}</p>
-                          <p className={spaceMono.className} style={{ fontSize:12, fontWeight:700, color: isOver ? '#ef4444' : '#00d4ff' }}>{isOver?'+':''}Rp {(Math.abs(remaining)/1000).toFixed(0)}k</p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* WEEKLY SPEND */}
-                <div style={{ background:'#0f0f17', border:'1px solid #1e1e2e', borderRadius:6, padding:'16px 18px' }}>
-                  <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:14 }}>WEEKLY SPEND</p>
-                  <div style={{ display:'flex', alignItems:'flex-end', gap:8, height:80, marginBottom:8 }}>
-                    {weeklySpend.map((w, i) => (
-                      <div key={w.dateKey} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', height:'100%', justifyContent:'flex-end', gap:4 }}>
+                      <div style={{ height: 8, background: '#1e1e2e', borderRadius: 4, overflow: 'hidden' }}>
                         <div style={{
-                          width:'100%', height:`${w.pct}%`,
-                          background: i === weeklySpend.length - 1
-                            ? 'linear-gradient(180deg, #00d4ff, #3b82f6)'
-                            : 'linear-gradient(180deg, #2d2d3d, #1e1e2e)',
-                          borderRadius:'2px 2px 0 0', minHeight:4,
-                          boxShadow: i === weeklySpend.length - 1 ? '0 0 8px rgba(0,212,255,0.4)' : 'none',
+                          height: '100%', width: `${pct}%`,
+                          background: isOver ? 'linear-gradient(90deg,#ef4444,#dc2626)' : pct > 70 ? 'linear-gradient(90deg,#f59e0b,#ef4444)' : 'linear-gradient(90deg,#00d4ff,#10b981)',
+                          borderRadius: 4, transition: 'width 0.5s ease',
+                          boxShadow: isOver ? '0 0 8px rgba(239,68,68,0.5)' : '0 0 8px rgba(0,212,255,0.4)',
                         }} />
                       </div>
-                    ))}
+                    </div>
+                    <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                      {isOver ? (
+                        <>
+                          <div className={spaceMono.className} style={{ fontSize: 12, fontWeight: 700, color: '#ef4444', marginBottom: 2 }}>+Rp {Math.abs(remaining).toLocaleString('id-ID')}</div>
+                          <div style={{ fontSize: 8, color: '#ef4444', letterSpacing: '0.1em', border: '1px solid #ef4444', padding: '2px 8px', borderRadius: 3, background: 'rgba(239,68,68,0.12)', whiteSpace: 'nowrap' }}>⚠ LIMIT TERLAMPAUI</div>
+                        </>
+                      ) : (
+                        <>
+                          <div className={spaceMono.className} style={{ fontSize: 12, fontWeight: 700, color: '#10b981', marginBottom: 2 }}>Rp {remaining.toLocaleString('id-ID')}</div>
+                          <div style={{ fontSize: 8, color: '#10b981', letterSpacing: '0.1em', border: '1px solid #10b981', padding: '2px 8px', borderRadius: 3, background: 'rgba(16,185,129,0.1)', whiteSpace: 'nowrap' }}>● SISA BULAN INI</div>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <div style={{ display:'flex', gap:8 }}>
-                    {weeklySpend.map(w => (
-                      <div key={w.dateKey} style={{ flex:1, textAlign:'center' }}>
-                        <span style={{ fontSize:7, color:'#334155', letterSpacing:'0.06em', textTransform:'uppercase' }}>{w.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
 
-                {/* SYSTEM STATUS */}
-                <div style={{ background:'#0f0f17', border:'1px solid #1e1e2e', borderRadius:6, padding:'16px 18px' }}>
-                  <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:14 }}>SYSTEM STATUS</p>
-                  {[
-                    { label:'LIQUIDITY',  status: currentCash >= 3_000_000 ? 'HEALTHY' : currentCash >= 1_000_000 ? 'CAUTION' : 'LOW',   color: currentCash >= 3_000_000 ? '#10b981' : currentCash >= 1_000_000 ? '#f59e0b' : '#ef4444' },
-                    { label:'PAYLATER',   status: fin.paylaterDebt === 0 ? 'CLEAR' : 'REVIEW', color: fin.paylaterDebt === 0 ? '#10b981' : '#ef4444' },
-                    { label:'INVESTMENT', status: 'GROWING',  color:'#a855f7' },
-                    { label:'BUDGET',     status: fin.monthRemaining > 0 ? 'ON TRACK' : 'OVERRUN', color: fin.monthRemaining > 0 ? '#10b981' : '#ef4444' },
-                  ].map((item, i, arr) => (
-                    <div key={item.label} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'9px 0', borderBottom: i < arr.length - 1 ? '1px solid #1e1e2e' : 'none' }}>
-                      <span style={{ fontSize:9, color:'#64748b', letterSpacing:'0.1em', textTransform:'uppercase' }}>{item.label}</span>
-                      <span style={{ fontSize:8, padding:'2px 9px', color:item.color, border:`1px solid ${item.color}`, background:`${item.color}15`, letterSpacing:'0.1em', borderRadius:2 }}>
-                        ● {item.status}
+                  {/* ── HERO METRIC: Bisa Jajan Berapa? ── */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, rgba(0,212,255,0.06) 0%, rgba(0,100,255,0.04) 100%)',
+                    border: '1px solid rgba(0,212,255,0.25)',
+                    borderRadius: 12, padding: '28px 24px',
+                    marginBottom: 16, textAlign: 'center', position: 'relative', overflow: 'hidden',
+                    transition: 'all 0.25s',
+                  }}
+                    onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform='translateY(-2px)'; el.style.boxShadow='0 12px 40px rgba(0,212,255,0.1), 0 0 60px rgba(0,212,255,0.04)'; el.style.borderColor='rgba(0,212,255,0.45)'; }}
+                    onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform='translateY(0)'; el.style.boxShadow='none'; el.style.borderColor='rgba(0,212,255,0.25)'; }}
+                  >
+                    {/* top gradient bar */}
+                    <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background:'linear-gradient(90deg, transparent, #00d4ff, #ffd700, transparent)', opacity:0.7 }} />
+                    <p className={spaceMono.className} style={{ fontSize:11, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:12 }}>💰 Sisa Dana Aman Bulan Ini</p>
+                    <p className={spaceMono.className} style={{ fontSize:'clamp(32px, 6vw, 52px)', fontWeight:700, color:'#ffd700', textShadow:'0 0 32px rgba(255,215,0,0.35)', letterSpacing:'-0.02em', lineHeight:1, marginBottom:14 }}>
+                      Rp {Math.max(0, remaining).toLocaleString('id-ID')}
+                    </p>
+                    <div>
+                      <span style={{
+                        display:'inline-flex', alignItems:'center', gap:6,
+                        padding:'5px 16px', borderRadius:20,
+                        fontFamily: spaceMono.style.fontFamily, fontSize:12, fontWeight:700, letterSpacing:'0.04em',
+                        ...(isOver
+                          ? { background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', color:'#ef4444', boxShadow:'0 0 12px rgba(239,68,68,0.2)' }
+                          : bisaJajanHariLocal <= 3
+                            ? { background:'rgba(255,149,0,0.1)', border:'1px solid rgba(255,149,0,0.3)', color:'#ff9500', boxShadow:'0 0 12px rgba(255,149,0,0.15)' }
+                            : { background:'rgba(0,255,136,0.1)', border:'1px solid rgba(0,255,136,0.3)', color:'#00ff88', boxShadow:'0 0 12px rgba(0,255,136,0.15)' }),
+                      }}>
+                        {isOver ? '⚠ Sudah over budget' : `✓ Aman untuk ~${bisaJajanHariLocal} hari lagi`}
                       </span>
                     </div>
-                  ))}
-                </div>
+                    <button
+                      onClick={() => setActiveTab('ANALYTICS')}
+                      className={spaceMono.className}
+                      style={{
+                        marginTop:16, padding:'7px 20px', background:'rgba(0,212,255,0.08)',
+                        border:'1px solid rgba(0,212,255,0.3)', color:'#00d4ff', borderRadius:6,
+                        cursor:'pointer', fontSize:10, letterSpacing:'0.08em', textTransform:'uppercase',
+                        transition:'all 0.2s',
+                      }}
+                      onMouseEnter={e => { const el=e.currentTarget as HTMLButtonElement; el.style.background='rgba(0,212,255,0.18)'; el.style.boxShadow='0 0 16px rgba(0,212,255,0.3)'; }}
+                      onMouseLeave={e => { const el=e.currentTarget as HTMLButtonElement; el.style.background='rgba(0,212,255,0.08)'; el.style.boxShadow='none'; }}
+                    >
+                      LIHAT ANALISIS DETAIL →
+                    </button>
+                  </div>
 
-              </div>
-            </div>
+                  {/* ── TODAY'S TRANSACTIONS ── */}
+                  <div style={{
+                    background:'#0f0f17', border:'1px solid #1e1e2e', borderRadius:8, padding:'18px 20px',
+                    transition:'all 0.2s',
+                  }}
+                    onMouseEnter={e => { const el=e.currentTarget as HTMLDivElement; el.style.borderColor='#2d2d3d'; el.style.boxShadow='0 8px 24px rgba(0,0,0,0.3)'; }}
+                    onMouseLeave={e => { const el=e.currentTarget as HTMLDivElement; el.style.borderColor='#1e1e2e'; el.style.boxShadow='none'; }}
+                  >
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+                      <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase' }}>🕐 TRANSAKSI HARI INI</p>
+                      {todayTxs.length > 0 && (
+                        <span className={spaceMono.className} style={{ fontSize:12, fontWeight:700, color:'#ef4444' }}>
+                          −Rp {todaySpentLocal.toLocaleString('id-ID')}
+                        </span>
+                      )}
+                    </div>
+
+                    {transactions.length === 0 ? (
+                      /* New user empty state */
+                      <div style={{ textAlign:'center', padding:'32px 20px' }}>
+                        <div style={{ fontSize:48, marginBottom:12, animation:'float-anim 3s ease-in-out infinite' }}>🚀</div>
+                        <p className={spaceMono.className} style={{ fontSize:14, fontWeight:700, color:'#f8fafc', marginBottom:10 }}>Sistem Siap Monitor Arus Kasmu</p>
+                        <p style={{ fontSize:12, color:'#475569', lineHeight:1.7, maxWidth:440, margin:'0 auto 20px' }}>
+                          Mulai dengan mencatat pengeluaran pertamamu hari ini —{' '}
+                          <em style={{ color:'#00d4ff' }}>mungkin pengeluaran untuk beli biji kopi V60, servis motor, atau top-up RDN?</em>
+                        </p>
+                        <div style={{ display:'flex', gap:10, justifyContent:'center', flexWrap:'wrap' }}>
+                          <button
+                            onClick={() => setActiveTab('OPTIONS')}
+                            className={spaceMono.className}
+                            style={{ padding:'10px 20px', background:'linear-gradient(135deg, #00d4ff, #0055dd)', border:'none', color:'#000', borderRadius:8, cursor:'pointer', fontSize:11, fontWeight:700, letterSpacing:'0.08em', boxShadow:'0 0 20px rgba(0,212,255,0.4)', transition:'all 0.2s' }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform='translateY(-2px)'; (e.currentTarget as HTMLButtonElement).style.boxShadow='0 0 32px rgba(0,212,255,0.6)'; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform='translateY(0)'; (e.currentTarget as HTMLButtonElement).style.boxShadow='0 0 20px rgba(0,212,255,0.4)'; }}
+                          >
+                            ➕ CATAT SEKARANG
+                          </button>
+                        </div>
+                      </div>
+                    ) : todayTxs.length === 0 ? (
+                      /* Has data but no tx today */
+                      <div style={{ textAlign:'center', padding:'28px 20px' }}>
+                        <div style={{ fontSize:32, marginBottom:10 }}>✨</div>
+                        <p style={{ fontSize:12, color:'#475569', marginBottom:8 }}>Belum ada pengeluaran hari ini</p>
+                        <p style={{ fontSize:11, color:'#334155', lineHeight:1.6 }}>
+                          Catat pengeluaran kecil sekalipun — bubble tea, parkir, atau jajan pasar.
+                        </p>
+                      </div>
+                    ) : (
+                      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                        {todayTxs.slice(0, 5).map((trx: any) => {
+                          const catColor = CATEGORY_COLORS[trx.category] || '#64748b';
+                          return (
+                            <div key={trx.id} style={{
+                              display:'flex', alignItems:'center', gap:12, padding:'10px 14px',
+                              background:'rgba(255,255,255,0.02)', border:'1px solid #1e1e2e',
+                              borderRadius:8, transition:'all 0.15s',
+                            }}
+                              onMouseEnter={e => { const el=e.currentTarget as HTMLDivElement; el.style.borderColor='#2d2d3d'; el.style.background='rgba(255,255,255,0.04)'; el.style.transform='translateX(3px)'; }}
+                              onMouseLeave={e => { const el=e.currentTarget as HTMLDivElement; el.style.borderColor='#1e1e2e'; el.style.background='rgba(255,255,255,0.02)'; el.style.transform='translateX(0)'; }}
+                            >
+                              <span style={{ fontSize:8, padding:'2px 7px', border:`1px solid ${catColor}`, color:catColor, background:`${catColor}18`, letterSpacing:'0.08em', borderRadius:3, flexShrink:0 }}>{trx.category}</span>
+                              <span style={{ flex:1, fontSize:12, color:'#94a3b8', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{trx.description}</span>
+                              <span className={spaceMono.className} style={{ fontSize:12, fontWeight:700, color:'#ef4444', flexShrink:0 }}>−Rp {trx.amount.toLocaleString('id-ID')}</span>
+                            </div>
+                          );
+                        })}
+                        {todayTxs.length > 5 && (
+                          <button onClick={() => setActiveTab('HISTORY')} className={spaceMono.className} style={{ fontSize:9, color:'#475569', background:'none', border:'none', cursor:'pointer', letterSpacing:'0.1em', textTransform:'uppercase', padding:'4px 0' }}>
+                            +{todayTxs.length - 5} transaksi lainnya →
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => setActiveTab('OPTIONS')}
+                      className={spaceMono.className}
+                      style={{
+                        width:'100%', marginTop:14, padding:'10px', background:'none',
+                        border:'1px solid rgba(0,212,255,0.2)', color:'#475569', borderRadius:6,
+                        cursor:'pointer', fontSize:10, letterSpacing:'0.08em', textTransform:'uppercase',
+                        transition:'all 0.2s',
+                      }}
+                      onMouseEnter={e => { const el=e.currentTarget as HTMLButtonElement; el.style.borderColor='rgba(0,212,255,0.5)'; el.style.color='#00d4ff'; el.style.background='rgba(0,212,255,0.06)'; el.style.boxShadow='0 0 12px rgba(0,212,255,0.15)'; }}
+                      onMouseLeave={e => { const el=e.currentTarget as HTMLButtonElement; el.style.borderColor='rgba(0,212,255,0.2)'; el.style.color='#475569'; el.style.background='none'; el.style.boxShadow='none'; }}
+                    >
+                      ➕ CATAT PENGELUARAN
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         )}
 
@@ -1021,6 +840,236 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
         {/* ════════════════ ANALYTICS TAB ════════════════ */}
         {activeTab === 'ANALYTICS' && (
           <div>
+
+            {/* ── ADVANCED KPI METRICS ── */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))', gap:12, marginBottom:16 }}>
+              {[
+                { label:'PAYLATER', value:`Rp ${fin.paylaterDebt.toLocaleString('id-ID')}`, color:'#ef4444', sub:'Active debt' },
+                { label:'CURRENT CASH', value:`Rp ${currentCash.toLocaleString('id-ID')}`, color:'#00d4ff', sub:'Liquid' },
+                { label:'INCOME ADDED', value:`+ Rp ${fin.totalIncome.toLocaleString('id-ID')}`, color:'#10b981', sub:'Dividen + Gaji' },
+                { label:'WORTH REMAINING', value:`Rp ${fin.monthRemaining.toLocaleString('id-ID')}`, color: fin.monthRemaining < 0 ? '#ef4444' : '#f8fafc', sub: fin.monthRemaining >= 0 ? 'On track' : 'Overrun' },
+                { label:'DEBT RATIO', value: fin.totalAllocation > 0 ? `${((fin.paylaterDebt/fin.totalAllocation)*100).toFixed(1)}%` : '0%', color: fin.paylaterDebt > fin.totalAllocation*0.3 ? '#ef4444' : '#10b981', sub:'PayLater vs total' },
+                { label:'INVEST GROWTH', value:`+Rp ${(fin.totalIncome/1000).toFixed(0)}k`, color:'#a855f7', sub:'Est. from income' },
+              ].map(card => (
+                <div key={card.label} style={{
+                  background:'#0f0f17', border:'1px solid #1e1e2e', borderTop:`2px solid ${card.color}`,
+                  padding:'16px 18px', borderRadius:6, transition:'all 0.2s', cursor:'default',
+                }}
+                  onMouseEnter={e => { const el=e.currentTarget as HTMLDivElement; el.style.borderColor=card.color; el.style.transform='translateY(-4px)'; el.style.boxShadow=`0 8px 32px rgba(0,0,0,0.3), 0 0 24px ${card.color}33`; }}
+                  onMouseLeave={e => { const el=e.currentTarget as HTMLDivElement; el.style.borderColor='#1e1e2e'; el.style.borderTopColor=card.color; el.style.transform='translateY(0)'; el.style.boxShadow='none'; }}
+                >
+                  <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:8 }}>{card.label}</p>
+                  <p className={spaceMono.className} style={{ fontSize:16, fontWeight:700, color:card.color, lineHeight:1, marginBottom:6 }}>{card.value}</p>
+                  <p style={{ fontSize:9, color:'#334155', letterSpacing:'0.08em' }}>{card.sub}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* ── ALLOCATION BREAKDOWN DONUT ── */}
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:16 }}>
+              <div style={{ background:'#0f0f17', border:'1px solid #1e1e2e', borderRadius:8, padding:'18px 20px', transition:'all 0.2s' }}
+                onMouseEnter={e => { const el=e.currentTarget as HTMLDivElement; el.style.borderColor='#2d2d3d'; el.style.boxShadow='0 8px 28px rgba(0,0,0,0.3)'; }}
+                onMouseLeave={e => { const el=e.currentTarget as HTMLDivElement; el.style.borderColor='#1e1e2e'; el.style.boxShadow='none'; }}
+              >
+                <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:16 }}>🍩 ALLOCATION BREAKDOWN</p>
+                <div style={{ display:'flex', gap:18, alignItems:'center', marginBottom:16 }}>
+                  <div style={{ position:'relative', width:140, height:140, flexShrink:0 }}>
+                    <svg width="140" height="140" viewBox="0 0 140 140" style={{ display:'block', transform:'rotate(-90deg)' }}>
+                      <circle cx="70" cy="70" r="52" fill="none" stroke="#1e1e2e" strokeWidth="18" />
+                      {!loading && (() => {
+                        const R = 52; const C = 2 * Math.PI * R; let off = 0;
+                        return fin.categoryData.map(cat => {
+                          const dash = (cat.percentage / 100) * C;
+                          const el = (
+                            <circle key={cat.name} cx="70" cy="70" r={R} fill="none"
+                              stroke={cat.color} strokeWidth="18"
+                              strokeDasharray={`${dash} ${C - dash}`}
+                              strokeDashoffset={-off} strokeLinecap="butt"
+                              style={{ filter:`drop-shadow(0 0 6px ${cat.color}66)`, transition:'all 0.6s' }}
+                            />
+                          );
+                          off += dash; return el;
+                        });
+                      })()}
+                    </svg>
+                    <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', textAlign:'center', pointerEvents:'none' }}>
+                      <div className={spaceMono.className} style={{ fontSize:11, fontWeight:700, color:'#f8fafc', whiteSpace:'nowrap' }}>
+                        Rp {(fin.totalAllocation/1_000_000).toFixed(2)}M
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ flex:1, display:'flex', flexDirection:'column', gap:7 }}>
+                    {fin.categoryData.map(cat => (
+                      <div key={cat.name}>
+                        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:3 }}>
+                          <span style={{ fontSize:9, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.08em' }}>{cat.name}</span>
+                          <span className={spaceMono.className} style={{ fontSize:9, color:cat.color, fontWeight:700 }}>{cat.percentage}%</span>
+                        </div>
+                        <div style={{ height:3, background:'#1e1e2e', borderRadius:2, overflow:'hidden' }}>
+                          <div style={{ height:'100%', width:`${cat.percentage}%`, background:cat.color, borderRadius:2, transition:'width 0.5s ease', boxShadow:`0 0 6px ${cat.color}66` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Category pick chips */}
+                <div style={{ borderTop:'1px solid #1e1e2e', paddingTop:14 }}>
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom: expandedCategory ? 10 : 0 }}>
+                    {fin.categoryData.map(cat => {
+                      const active = expandedCategory === cat.name;
+                      return (
+                        <button key={cat.name} onClick={() => setExpandedCategory(active ? null : cat.name)} style={{
+                          display:'flex', alignItems:'center', gap:5, padding:'4px 10px',
+                          background: active ? `${cat.color}18` : '#13131c',
+                          border: `1px solid ${active ? cat.color : '#252530'}`,
+                          borderRadius:4, cursor:'pointer',
+                          boxShadow: active ? `0 0 10px ${cat.color}44` : 'none',
+                          transition:'all 0.15s',
+                        }}>
+                          <span style={{ width:6, height:6, borderRadius:'50%', background:cat.color, display:'inline-block', flexShrink:0 }} />
+                          <span className={spaceMono.className} style={{ fontSize:8, color: active ? cat.color : '#64748b', textTransform:'uppercase', letterSpacing:'0.08em' }}>{cat.name} {cat.percentage}%</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {expandedCategory && (
+                    <div style={{ display:'flex', flexDirection:'column', gap:5, marginTop:4 }}>
+                      {expandedCategory === 'CASH' ? (
+                        <div style={{ display:'flex', justifyContent:'space-between', padding:'8px 12px', background:'rgba(255,255,255,0.03)', borderRadius:4, border:'1px solid #1e1e2e' }}>
+                          <span style={{ fontSize:11, color:'#94a3b8' }}>Liquid Cash Reserve</span>
+                          <span className={spaceMono.className} style={{ fontWeight:700, color:CATEGORY_COLORS['CASH'], fontSize:11 }}>Rp {currentCash.toLocaleString('id-ID')}</span>
+                        </div>
+                      ) : (
+                        transactions.filter(t => t.category === expandedCategory && t.type === 'DEBIT').map((t, i) => (
+                          <div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'8px 12px', background:'rgba(255,255,255,0.03)', borderRadius:4, border:'1px solid #1e1e2e' }}>
+                            <span style={{ fontSize:11, color:'#94a3b8', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'60%' }}>{t.description}</span>
+                            <span className={spaceMono.className} style={{ fontWeight:700, color:CATEGORY_COLORS[expandedCategory], fontSize:11, flexShrink:0 }}>Rp {t.amount.toLocaleString('id-ID')}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* ── SHORT-ANALYSIS (gated by ≥5 transactions) ── */}
+              <div style={{ background:'#0f0f17', border:'1px solid rgba(123,97,255,0.2)', borderRadius:8, padding:'18px 20px', position:'relative', transition:'all 0.2s' }}
+                onMouseEnter={e => { const el=e.currentTarget as HTMLDivElement; el.style.borderColor='rgba(123,97,255,0.4)'; el.style.boxShadow='0 0 32px rgba(123,97,255,0.08)'; }}
+                onMouseLeave={e => { const el=e.currentTarget as HTMLDivElement; el.style.borderColor='rgba(123,97,255,0.2)'; el.style.boxShadow='none'; }}
+              >
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+                  <p style={{ fontSize:9, color:'#7b61ff', letterSpacing:'0.14em', textTransform:'uppercase' }}>🤖 SHORT-ANALYSIS · AI</p>
+                  <span style={{ fontSize:8, padding:'2px 9px', color:'#a855f7', border:'1px solid #a855f7', background:'rgba(168,85,247,0.1)', letterSpacing:'0.1em', borderRadius:2 }}>AI-GENERATED</span>
+                </div>
+
+                {transactions.length < 5 ? (
+                  /* Gate: need ≥5 transactions */
+                  <div style={{ textAlign:'center', padding:'32px 20px' }}>
+                    <div style={{ fontSize:36, marginBottom:10, opacity:0.5 }}>🤖</div>
+                    <p className={spaceMono.className} style={{ fontSize:11, color:'#7b61ff', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:10 }}>HAEGUSA-AI Short Analysis</p>
+                    <p style={{ fontSize:12, color:'#475569', lineHeight:1.65, maxWidth:300, margin:'0 auto 16px' }}>
+                      Analisis AI akan muncul setelah kamu mencatat minimal <strong style={{color:'#00d4ff'}}>5 transaksi</strong>.<br/>
+                      Saat ini: <span style={{color:'#00d4ff'}}>{transactions.length}</span> transaksi.
+                    </p>
+                    <div style={{ height:4, borderRadius:2, background:'rgba(255,255,255,0.05)', maxWidth:200, margin:'0 auto', overflow:'hidden' }}>
+                      <div style={{ height:'100%', width:`${Math.min(100,(transactions.length/5)*100)}%`, background:'linear-gradient(90deg,#7b61ff,#00d4ff)', borderRadius:2, transition:'width 0.6s', boxShadow:'0 0 6px rgba(0,212,255,0.4)' }} />
+                    </div>
+                    <p className={spaceMono.className} style={{ fontSize:10, color:'#334155', marginTop:8 }}>{transactions.length}/5 transaksi</p>
+                  </div>
+                ) : (
+                  /* Unlocked analysis */
+                  <>
+                    <p style={{ fontSize:11, color:'#94a3b8', lineHeight:1.8, flex:1, marginBottom:16 }}>
+                      Injeksi dividen (<span style={{ color:'#00d4ff', fontWeight:700 }}>Rp {fin.totalIncome.toLocaleString('id-ID')}</span>) dan struktur portofolio fundamental menunjukkan pertumbuhan positif. Namun, likuiditas kamu terjebak dalam{' '}
+                      <em style={{ color:'#f59e0b' }}>disonansi kognitif</em>: memegang kas besar (<span style={{ color:'#00d4ff', fontWeight:700 }}>Rp {currentCash.toLocaleString('id-ID')}</span>) namun mengakumulasi{' '}
+                      <em>Accounts Payable</em> / PayLater berbunga tinggi (<span style={{ color:'#ef4444', fontWeight:700 }}>Rp {fin.paylaterDebt.toLocaleString('id-ID')}</span>) untuk pengeluaran non-produktif. Segera rekapitalisasi utang tersebut.
+                    </p>
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:14 }}>
+                      <div style={{ background:'#13131c', border:'1px solid #1e1e2e', padding:'12px 14px', borderRadius:4, transition:'all 0.2s' }}
+                        onMouseEnter={e => { const el=e.currentTarget as HTMLDivElement; el.style.borderColor='#ef4444'; el.style.boxShadow='0 0 16px rgba(239,68,68,0.2)'; }}
+                        onMouseLeave={e => { const el=e.currentTarget as HTMLDivElement; el.style.borderColor='#1e1e2e'; el.style.boxShadow='none'; }}
+                      >
+                        <div style={{ fontSize:18, marginBottom:4 }}>⚡</div>
+                        <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:4 }}>DEBT RATIO</p>
+                        <p className={spaceMono.className} style={{ fontSize:18, fontWeight:700, color:'#ef4444' }}>
+                          {fin.totalAllocation > 0 ? ((fin.paylaterDebt / fin.totalAllocation) * 100).toFixed(1) : '0.0'}%
+                        </p>
+                      </div>
+                      <div style={{ background:'#13131c', border:'1px solid #1e1e2e', padding:'12px 14px', borderRadius:4, transition:'all 0.2s' }}
+                        onMouseEnter={e => { const el=e.currentTarget as HTMLDivElement; el.style.borderColor='#10b981'; el.style.boxShadow='0 0 16px rgba(16,185,129,0.2)'; }}
+                        onMouseLeave={e => { const el=e.currentTarget as HTMLDivElement; el.style.borderColor='#1e1e2e'; el.style.boxShadow='none'; }}
+                      >
+                        <div style={{ fontSize:18, marginBottom:4 }}>📈</div>
+                        <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:4 }}>INVEST GROWTH</p>
+                        <p className={spaceMono.className} style={{ fontSize:18, fontWeight:700, color:'#10b981' }}>+Rp {(fin.totalIncome / 1000).toFixed(0)}k</p>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Chat button always visible */}
+                <button
+                  onClick={() => setChatOpen(o => !o)}
+                  className={spaceMono.className}
+                  style={{
+                    width:'100%', padding:'9px', marginTop:8,
+                    background: chatOpen ? '#00d4ff' : 'rgba(0,212,255,0.08)',
+                    border:`1px solid ${chatOpen ? '#00d4ff' : 'rgba(0,212,255,0.3)'}`,
+                    color: chatOpen ? '#000' : '#00d4ff', borderRadius:6,
+                    cursor:'pointer', fontSize:10, fontWeight:700, letterSpacing:'0.08em',
+                    transition:'all 0.2s', display:'flex', alignItems:'center', justifyContent:'center', gap:6,
+                  }}
+                  onMouseEnter={e => { if (!chatOpen) { const el=e.currentTarget as HTMLButtonElement; el.style.background='rgba(0,212,255,0.18)'; el.style.boxShadow='0 0 16px rgba(0,212,255,0.3)'; } }}
+                  onMouseLeave={e => { if (!chatOpen) { const el=e.currentTarget as HTMLButtonElement; el.style.background='rgba(0,212,255,0.08)'; el.style.boxShadow='none'; } }}
+                >
+                  🤖 CHAT HAEGUSA-AI
+                </button>
+
+                {/* Chat panel overlay */}
+                {chatOpen && (
+                  <div style={{
+                    position:'absolute', top:0, left:0, right:0, bottom:0,
+                    background:'#0c0c14', borderRadius:8, border:'1px solid rgba(0,212,255,0.3)',
+                    display:'flex', flexDirection:'column', zIndex:50, overflow:'hidden',
+                  }}>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom:'1px solid #1e1e2e', background:'#0f0f17', flexShrink:0 }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                        <span style={{ width:8, height:8, borderRadius:'50%', background:'#00d4ff', display:'inline-block', boxShadow:'0 0 6px #00d4ff' }} />
+                        <span className={spaceMono.className} style={{ fontSize:10, color:'#00d4ff', letterSpacing:'0.1em' }}>HAEGUSA-AI · Gemini Flash</span>
+                      </div>
+                      <button onClick={() => setChatOpen(false)} style={{ background:'none', border:'none', color:'#475569', cursor:'pointer', fontSize:16, lineHeight:1 }}>x</button>
+                    </div>
+                    <div style={{ flex:1, overflowY:'auto', padding:'12px 14px', display:'flex', flexDirection:'column', gap:8 }}>
+                      {chatMsgs.length === 0 && (
+                        <div style={{ textAlign:'center', padding:'20px 10px' }}>
+                          <div style={{ fontSize:24, marginBottom:8 }}>🤖</div>
+                          <p style={{ fontSize:10, color:'#475569', lineHeight:1.6 }}>Halo! Saya <strong style={{color:'#00d4ff'}}>HAEGUSA-AI</strong>.<br/>Tanya apa saja soal keuangan kamu.</p>
+                          {["Budget bulan ini gimana?","Saran untuk kurangi pengeluaran?","Analisis utang PayLater ku."].map(q => (
+                            <button key={q} onClick={() => { setChatInput(q); }} style={{ display:'block', width:'100%', margin:'4px 0', padding:'6px 10px', background:'rgba(0,212,255,0.06)', border:'1px solid rgba(0,212,255,0.2)', color:'#64748b', borderRadius:4, cursor:'pointer', fontSize:9, textAlign:'left', letterSpacing:'0.04em' }}>{q}</button>
+                          ))}
+                        </div>
+                      )}
+                      {chatMsgs.map((m, i) => (
+                        <div key={i} style={{ alignSelf: m.role==='user'?'flex-end':'flex-start', maxWidth:'85%', background: m.role==='user'?'rgba(0,212,255,0.12)':'#13131c', border:`1px solid ${m.role==='user'?'rgba(0,212,255,0.3)':'#1e1e2e'}`, borderRadius: m.role==='user'?'12px 12px 0 12px':'12px 12px 12px 0', padding:'8px 12px' }}>
+                          <p style={{ fontSize:11, color:'#e2e8f0', lineHeight:1.6, whiteSpace:'pre-wrap', margin:0 }}>{m.text}</p>
+                        </div>
+                      ))}
+                      {chatLoading && (
+                        <div style={{ alignSelf:'flex-start', padding:'8px 12px', background:'#13131c', border:'1px solid #1e1e2e', borderRadius:'12px 12px 12px 0' }}>
+                          <span style={{ fontSize:18 }}>⋯</span>
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display:'flex', gap:6, padding:'10px 14px', borderTop:'1px solid #1e1e2e', flexShrink:0 }}>
+                      <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key==='Enter'&&!e.shiftKey&&sendChat()} placeholder="Tanya soal keuangan kamu..." style={{ flex:1, background:'#1a1a24', border:'1px solid #2d2d3d', borderRadius:6, padding:'8px 12px', color:'#f8fafc', fontSize:11, outline:'none' }} />
+                      <button onClick={sendChat} disabled={chatLoading} style={{ padding:'8px 14px', background: chatLoading?'#1e1e2e':'#00d4ff', border:'none', borderRadius:6, color:'#000', fontWeight:700, fontSize:11, cursor: chatLoading?'not-allowed':'pointer' }}>↑</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* ── QUANTITATIVE AI ANALYST (strategic recommendations) ── */}
             <div style={{ background:'#0f0f17', border:'1px solid #1e1e2e', borderTop:'2px solid #7b61ff', borderRadius:8, padding:28, marginBottom:16, display:'flex', gap:20 }}>
               <div style={{ width:56, height:56, background:'rgba(123,97,255,0.12)', border:'1px solid rgba(123,97,255,0.4)', borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>👔</div>
               <div>
