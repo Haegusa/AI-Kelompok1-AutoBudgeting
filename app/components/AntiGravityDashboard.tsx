@@ -106,29 +106,35 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
   const [aiAssessment, setAiAssessment] = useState<any>(null);
   const [loadingAssessment, setLoadingAssessment] = useState(false);
 
+  const fetchAssessment = async () => {
+    setLoadingAssessment(true);
+    setAiAssessment(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/assessment', {
+        method: 'POST',
+        headers: { 'Authorization': session?.access_token ? `Bearer ${session.access_token}` : '' }
+      });
+      const data = await res.json();
+      if (data && data.diagnostics) {
+        setAiAssessment(data);
+      } else {
+        setAiAssessment({ error: true, quote: "Mohon maaf, layanan AI sedang sibuk atau data portofolio belum memadai. Silakan coba beberapa saat lagi." });
+      }
+    } catch (e) {
+      console.error(e);
+      setAiAssessment({ error: true, quote: "Terjadi kesalahan koneksi saat terhubung ke peladen AI." });
+    } finally {
+      setLoadingAssessment(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'ANALYTICS' && !aiAssessment && !loadingAssessment) {
-      const fetchAssessment = async () => {
-        setLoadingAssessment(true);
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          const res = await fetch('/api/assessment', {
-            method: 'POST',
-            headers: { 'Authorization': session?.access_token ? `Bearer ${session.access_token}` : '' }
-          });
-          const data = await res.json();
-          if (data && data.diagnostics) {
-            setAiAssessment(data);
-          }
-        } catch (e) {
-          console.error(e);
-        } finally {
-          setLoadingAssessment(false);
-        }
-      };
       fetchAssessment();
     }
-  }, [activeTab, aiAssessment, loadingAssessment]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   /* Floating quick-record FAB state */
   const [fabOpen,      setFabOpen]      = useState(false);
@@ -1101,10 +1107,10 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                   <span style={{ fontSize:9, padding:'3px 10px', border:'1px solid rgba(123,97,255,0.5)', color:'#7b61ff', background:'rgba(123,97,255,0.1)', letterSpacing:'0.12em', textTransform:'uppercase', borderRadius:3 }}>🤖 AI-Generated · Live Data</span>
                   {!aiAssessment && !loadingAssessment && (
-                    <button onClick={() => setAiAssessment(null)} style={{ background:'transparent', border:'1px solid #1e1e2e', color:'#94a3b8', fontSize:10, padding:'4px 10px', borderRadius:4, cursor:'pointer' }}>Generate Assessment</button>
+                    <button onClick={fetchAssessment} style={{ background:'transparent', border:'1px solid #1e1e2e', color:'#94a3b8', fontSize:10, padding:'4px 10px', borderRadius:4, cursor:'pointer' }}>Generate Assessment</button>
                   )}
                   {aiAssessment && (
-                    <button onClick={() => setAiAssessment(null)} style={{ background:'transparent', border:'1px solid #1e1e2e', color:'#94a3b8', fontSize:10, padding:'4px 10px', borderRadius:4, cursor:'pointer' }}>Refresh</button>
+                    <button onClick={fetchAssessment} style={{ background:'transparent', border:'1px solid #1e1e2e', color:'#94a3b8', fontSize:10, padding:'4px 10px', borderRadius:4, cursor:'pointer' }}>Refresh</button>
                   )}
                 </div>
               </div>
