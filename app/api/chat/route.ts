@@ -22,6 +22,8 @@ function nextKey(keys: string[]): string {
   return key;
 }
 
+import { createClient } from '@supabase/supabase-js';
+
 // ---------------------------------------------------------------------------
 // POST /api/chat
 // ---------------------------------------------------------------------------
@@ -35,15 +37,66 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { messages, financialContext } = await req.json();
+  const { messages } = await req.json();
+  const authHeader = req.headers.get('Authorization');
+
+  if (!authHeader) {
+    return NextResponse.json({ error: 'Unauthorized: Missing Authorization header.' }, { status: 401 });
+  }
+
+  // Create a server-side Supabase client using the client's token
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return NextResponse.json({ error: 'Unauthorized: Invalid token.' }, { status: 401 });
+  }
+
+  // Fetch financial data directly from the database
+  const { data: profile } = await supabase.from('profiles').select('current_cash, current_debt').eq('id', user.id).single();
+  const { data: transactions } = await supabase.from('transactions').select('amount, type, timestamp').eq('user_id', user.id);
+
+  // Calculate current month's spent amount
+  let thisMonthSpent = 0;
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  if (transactions) {
+    transactions.forEach((tx: any) => {
+      const txDate = new Date(tx.timestamp);
+      if (txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear && tx.type === 'DEBIT') {
+        thisMonthSpent += tx.amount;
+      }
+    });
+  }
+
+  const monthlyBudget = 1000000;
+  const remainingBudget = monthlyBudget - thisMonthSpent;
+  const isOverBudget = remainingBudget < 0;
+  const currentCash = profile?.current_cash || 0;
+  const currentDebt = profile?.current_debt || 0;
+
+  const financialNarrative = `
+=== RINGKASAN NERACA KEUANGAN ===
+Kas Likuid Tersedia: Rp ${currentCash.toLocaleString('id-ID')}
+Total Utang/PayLater Aktif: Rp ${currentDebt.toLocaleString('id-ID')}
+Anggaran Bulan Ini: Rp ${monthlyBudget.toLocaleString('id-ID')}
+Pengeluaran Bulan Ini: Rp ${thisMonthSpent.toLocaleString('id-ID')}
+Sisa Anggaran: Rp ${remainingBudget.toLocaleString('id-ID')} ${isOverBudget ? '(OVER BUDGET)' : ''}
+=================================
+`;
 
   const systemPrompt = `Kamu adalah asisten keuangan pribadi AI bernama "HAEGUSA-AI" untuk seorang mahasiswa Binus Jakarta.
 Kamu memiliki akses ke data keuangan real-time mereka. Jawab dengan campuran Bahasa Indonesia dan English (gaya casual Jakarta).
 Jadilah singkat, tajam, dan actionable. Gunakan emoji secara moderat. Jangan bertele-tele.
 
-=== DATA KEUANGAN SAAT INI ===
-${financialContext}
-================================
+Berdasarkan data keuangan di bawah ini, lakukan evaluasi rasio likuiditas dan berikan rekomendasi keputusan pengeluaran yang sangat tajam, presisi, dan realistis:
+${financialNarrative}
 
 Fokus pada insight yang relevan dengan data di atas. Jika ditanya sesuatu di luar data, jawab dengan jujur bahwa kamu tidak tahu.`;
 

@@ -304,23 +304,16 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
     setChatMsgs(nextMsgs);
     setChatInput('');
     setChatLoading(true);
-    const ctx = [
-      `Current Month: ${currentMonthStats.label}`,
-      `Monthly Budget: Rp ${MONTHLY_BUDGET.toLocaleString('id-ID')}`,
-      `This Month Spent: Rp ${currentMonthStats.spent.toLocaleString('id-ID')} (${currentMonthStats.pct}%)`,
-      `Budget Status: ${currentMonthStats.isOver ? 'OVER LIMIT' : 'On Track'}`,
-      `Current Cash: Rp ${currentCash.toLocaleString('id-ID')}`,
-      `Total Income: Rp ${fin.totalIncome.toLocaleString('id-ID')}`,
-      `PayLater Debt: Rp ${fin.paylaterDebt.toLocaleString('id-ID')}`,
-      `Month Remaining: Rp ${fin.monthRemaining.toLocaleString('id-ID')}`,
-      `Categories: ${fin.categoryData.map(c => `${c.name} ${c.percentage}%`).join(', ')}`,
-      `Recent 5 txns: ${transactions.slice(0,5).map(t => `${t.type==='DEBIT'?'-':'+'}Rp${t.amount} ${t.description}`).join(' | ')}`,
-    ].join('\n');
+
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const res  = await fetch('/api/chat', {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ messages: nextMsgs, financialContext: ctx }),
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': session?.access_token ? `Bearer ${session.access_token}` : ''
+        },
+        body:    JSON.stringify({ messages: nextMsgs }),
       });
       const data = await res.json();
       setChatMsgs(prev => [...prev, { role: 'assistant', text: data.text || data.error || 'Error' }]);
