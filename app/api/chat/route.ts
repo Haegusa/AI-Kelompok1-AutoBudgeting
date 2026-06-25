@@ -75,6 +75,12 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  const monthlyBudget = 1000000;
+  const remainingBudget = monthlyBudget - thisMonthSpent;
+  const isOverBudget = remainingBudget < 0;
+  const currentCash = profile?.current_cash || 0;
+  const currentDebt = profile?.current_debt || 0;
+
   // ---------------------------------------------------------------------------
   // Pre-calculate financial ratios for AI context
   // ---------------------------------------------------------------------------
