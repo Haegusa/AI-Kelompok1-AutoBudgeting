@@ -72,7 +72,7 @@ export default function LandingPage() {
             <span className={spaceMono.className} style={{ fontSize: 14, fontWeight: 700, color: '#070710' }}>B</span>
           </div>
           <span className={spaceMono.className} style={{ fontSize: 15, fontWeight: 700, color: '#00d4ff', letterSpacing: '0.05em', textShadow: '0 0 20px rgba(0,212,255,0.4)' }}>
-            BudgetOS
+            BINUSIAN-Daily Budgeting
           </span>
           <span style={{ fontSize: 10, color: '#334155', letterSpacing: '0.15em', textTransform: 'uppercase', marginLeft: 4 }}>
             by AI-Kelompok1
@@ -85,7 +85,7 @@ export default function LandingPage() {
           disabled={loading}
           style={{
             display: 'flex', alignItems: 'center', gap: 8,
-            padding: '8px 20px', borderRadius: 8,
+            padding: '8px 20px', borderRadius: 999,
             background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.3)',
             color: '#00d4ff', cursor: loading ? 'wait' : 'pointer',
             fontSize: 13, fontWeight: 600, transition: 'all 0.2s',
@@ -100,9 +100,9 @@ export default function LandingPage() {
       {/* ── HERO ── */}
       <section style={{ position: 'relative', zIndex: 1, padding: '100px 40px 80px', textAlign: 'center', maxWidth: 820, margin: '0 auto' }}>
 
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '5px 16px', borderRadius: 20, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', marginBottom: 32 }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '5px 16px', borderRadius: 999, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', marginBottom: 32 }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 8px #10b981', animation: 'pulse 2s infinite' }} />
-          <span className={spaceMono.className} style={{ fontSize: 11, color: '#10b981', letterSpacing: '0.1em' }}>LIVE · BINUS JAKARTA · AI-KELOMPOK1</span>
+          <span className={spaceMono.className} style={{ fontSize: 11, color: '#10b981', letterSpacing: '0.1em' }}>KELOMPOK1-LB53</span>
         </div>
 
         <h1 className={spaceMono.className} style={{
@@ -111,12 +111,11 @@ export default function LandingPage() {
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           marginBottom: 24, letterSpacing: '-0.02em',
         }}>
-          Your Financial<br />Command Center
+          Atur Kas Harian,<br />Tanpa Pusing.
         </h1>
 
-        <p style={{ fontSize: 18, color: '#94a3b8', lineHeight: 1.7, marginBottom: 48, maxWidth: 580, margin: '0 auto 48px' }}>
-          Stop guessing where your money goes. BudgetOS gives Binusian students a real-time,
-          AI-powered financial dashboard — built for the Jakarta student life.
+        <p style={{ fontSize: 18, color: '#94a3b8', lineHeight: 1.7, marginBottom: 48, maxWidth: 680, margin: '0 auto 48px' }}>
+          Berhenti menebak ke mana perginya uang jajanmu. Pantau pengeluaran harian dengan mudah—mulai dari sekadar membeli biji kopi untuk diseduh menggunakan alat giling keramik manual di kos, menikmati semangkuk soto ayam, hingga menyisihkan kas untuk portofolio investasi saham. BINUSIAN-Daily Budgeting hadir dengan asisten AI cerdas untuk menjaga dompetmu tetap sehat.
         </p>
 
         {/* CTA Button */}
@@ -127,7 +126,7 @@ export default function LandingPage() {
             disabled={loading}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14,
-              padding: '16px 40px', borderRadius: 12,
+              padding: '16px 40px', borderRadius: 999,
               background: loading ? 'rgba(255,255,255,0.05)' : '#fff',
               border: 'none', cursor: loading ? 'wait' : 'pointer',
               boxShadow: loading ? 'none' : '0 0 40px rgba(255,255,255,0.15), 0 8px 32px rgba(0,0,0,0.4)',
@@ -194,7 +193,7 @@ export default function LandingPage() {
               key={i}
               style={{
                 background: 'rgba(15,15,23,0.8)', border: '1px solid rgba(0,212,255,0.1)',
-                borderRadius: 16, padding: '28px 24px', transition: 'all 0.25s',
+                borderRadius: 32, padding: '28px 24px', transition: 'all 0.25s',
                 backdropFilter: 'blur(8px)', cursor: 'default',
               }}
               onMouseEnter={e => {
@@ -224,13 +223,13 @@ export default function LandingPage() {
       <section style={{ position: 'relative', zIndex: 1, padding: '0 40px 80px', maxWidth: 900, margin: '0 auto' }}>
         <div style={{
           background: 'rgba(12,12,20,0.9)', border: '1px solid rgba(0,212,255,0.15)',
-          borderRadius: 20, padding: '32px', backdropFilter: 'blur(12px)',
+          borderRadius: 32, padding: '32px', backdropFilter: 'blur(12px)',
           boxShadow: '0 0 80px rgba(0,212,255,0.05), 0 32px 80px rgba(0,0,0,0.5)',
         }}>
           {/* Fake nav */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid rgba(0,212,255,0.08)' }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00d4ff', boxShadow: '0 0 8px #00d4ff' }} />
-            <span className={spaceMono.className} style={{ fontSize: 11, color: '#00d4ff', letterSpacing: '0.1em' }}>BINUSIAN-BUDGETING · LIVE</span>
+            <span className={spaceMono.className} style={{ fontSize: 11, color: '#00d4ff', letterSpacing: '0.1em' }}>BINUSIAN-DAILY BUDGETING · KELOMPOK1-LB53</span>
             <div style={{ flex: 1 }} />
             <span className={spaceMono.className} style={{ fontSize: 11, color: '#334155' }}>00:00:00</span>
           </div>
@@ -268,7 +267,7 @@ export default function LandingPage() {
           disabled={loading}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 12,
-            padding: '15px 36px', borderRadius: 12, background: '#fff',
+            padding: '15px 36px', borderRadius: 999, background: '#fff',
             border: 'none', cursor: loading ? 'wait' : 'pointer',
             fontSize: 15, fontWeight: 700, color: '#111',
             boxShadow: '0 0 40px rgba(255,255,255,0.12), 0 8px 32px rgba(0,0,0,0.4)',
