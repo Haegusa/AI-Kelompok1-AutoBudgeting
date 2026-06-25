@@ -413,7 +413,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
         height:48, background:'#0c0c14', borderBottom:'1px solid #1e1e2e',
         display:'flex', alignItems:'center', padding:'0 12px',
         position:'sticky', top:0, zIndex:200, flexShrink:0,
-        gap:8, overflowX:'auto', overflowY:'hidden',
+        gap:8,
       }}>
         {/* Logo */}
         <span className={spaceMono.className} style={{
@@ -427,7 +427,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
         <div style={{ flex:1, minWidth:8 }} />
 
         {/* Nav tabs — scrollable row on mobile */}
-        <div style={{ display:'flex', gap:2, flexShrink:0 }}>
+        <div style={{ display:'flex', gap:2, flexShrink:1, minWidth:0, overflowX:'auto', overflowY:'hidden', msOverflowStyle:'none', scrollbarWidth:'none', paddingBottom:4, paddingTop:4 }}>
           {NAV_ITEMS.map(item => {
             const active = activeTab === item.id;
             return (
@@ -538,7 +538,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
       </nav>
 
       {/* ── MAIN CONTENT ── */}
-      <main className="w-full px-4 md:px-8 py-7 md:pb-14 flex-1" style={{ maxWidth: 1140, margin: '0 auto' }}>
+      <div style={{ flex:1, padding:'20px 12px 60px 12px', maxWidth:600, margin:'0 auto', width:'100%', boxSizing:'border-box' }}>
 
         {/* ════════════════ DASHBOARD TAB ════════════════ */}
         {activeTab === 'DASHBOARD' && (
@@ -1384,7 +1384,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
             </div>
           </div>
         )}
-      </main>
+      </div>
 
       {/* ── FLOATING QUICK-RECORD FAB ── */}
       <div style={{ position:'fixed', bottom:42, right:24, zIndex:300 }}>
