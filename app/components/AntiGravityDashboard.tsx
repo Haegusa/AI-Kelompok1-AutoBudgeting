@@ -124,11 +124,11 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
       if (data && data.diagnostics) {
         setAiAssessment(data);
       } else {
-        setAiAssessment({ error: true, quote: "Mohon maaf, layanan AI sedang sibuk atau data portofolio belum memadai. Silakan coba beberapa saat lagi." });
+        setAiAssessment({ error: true, quote: t('misc.ai_busy') });
       }
     } catch (e) {
       console.error(e);
-      setAiAssessment({ error: true, quote: "Terjadi kesalahan koneksi saat terhubung ke peladen AI." });
+      setAiAssessment({ error: true, quote: t('misc.conn_error') });
     } finally {
       setLoadingAssessment(false);
     }
