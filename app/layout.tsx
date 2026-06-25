@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Space_Mono, DM_Sans } from "next/font/google";
 import "./globals.css";
+import { LanguageProvider } from "./lib/LanguageContext";
 
 const spaceMono = Space_Mono({
   weight: ["400", "700"],
@@ -26,7 +27,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${spaceMono.variable} ${dmSans.variable}`}>
-      <body className="overflow-x-hidden w-full">{children}</body>
+      <body className="overflow-x-hidden w-full">
+        <LanguageProvider>{children}</LanguageProvider>
+      </body>
     </html>
   );
 }

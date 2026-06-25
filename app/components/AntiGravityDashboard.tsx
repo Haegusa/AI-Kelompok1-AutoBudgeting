@@ -4,6 +4,8 @@ import { useEffect, useState, useMemo } from "react";
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { DM_Sans, Space_Mono } from 'next/font/google';
+import { useLanguage } from '../lib/LanguageContext';
+import type { Lang } from '../lib/LanguageContext';
 
 const dmSans = DM_Sans({ subsets: ['latin'] });
 const spaceMono = Space_Mono({ weight: ['400', '700'], subsets: ['latin'] });
@@ -22,15 +24,17 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 const MONTHLY_BUDGET = 1_000_000;
 
-const NAV_ITEMS = [
-  { id: 'DASHBOARD', label: 'Dashboard' },
-  { id: 'HISTORY',   label: 'History'   },
-  { id: 'ANALYTICS', label: 'Analytics' },
-  { id: 'OPTIONS',   label: 'Settings'  },
-];
-
 /* ─────────────────────────────────────────── */
 export default function BinusianMonthlyBudgeting({ user }: { user?: User | null }) {
+
+  const { lang, setLang, t } = useLanguage();
+
+  const NAV_ITEMS = [
+    { id: 'DASHBOARD', label: t('tab.dashboard') },
+    { id: 'HISTORY',   label: t('tab.history')   },
+    { id: 'ANALYTICS', label: t('tab.analytics') },
+    { id: 'OPTIONS',   label: t('tab.settings')  },
+  ];
 
   const [activeTab,        setActiveTab]        = useState('DASHBOARD');
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
@@ -38,6 +42,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
   const [clockStr,         setClockStr]         = useState('');
   const [dateStr,          setDateStr]          = useState('');
   const [greeting,         setGreeting]         = useState('');
+  const [langDropOpen,     setLangDropOpen]     = useState(false);
 
   /* Profile */
   const [profile, setProfile] = useState({
@@ -164,6 +169,14 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, []);
+
+  /* ── Close lang dropdown on outside click ── */
+  useEffect(() => {
+    if (!langDropOpen) return;
+    const handler = () => setLangDropOpen(false);
+    document.addEventListener('click', handler, { once: true });
+    return () => document.removeEventListener('click', handler);
+  }, [langDropOpen]);
 
   /* ── Core financials ── */
   const fin = useMemo(() => {
@@ -347,12 +360,12 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
           'Content-Type': 'application/json',
           'Authorization': session?.access_token ? `Bearer ${session.access_token}` : ''
         },
-        body:    JSON.stringify({ messages: nextMsgs }),
+        body: JSON.stringify({ messages: nextMsgs, language: lang }),
       });
       const data = await res.json();
       setChatMsgs(prev => [...prev, { role: 'assistant', text: data.text || data.error || 'Error' }]);
     } catch {
-      setChatMsgs(prev => [...prev, { role: 'assistant', text: '⚠ Network error. Cek koneksi.' }]);
+      setChatMsgs(prev => [...prev, { role: 'assistant', text: t('misc.network_error') }]);
     } finally {
       setChatLoading(false);
     }
@@ -381,12 +394,12 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
 
   /* Ticker items */
   const tickerItems = [
-    ...fin.categoryData.map(c => `${c.name} ${c.percentage}% PORTFOLIO`),
-    `REMAINING  Rp ${fin.monthRemaining.toLocaleString('id-ID')}`,
-    `CURRENT  Rp ${currentCash.toLocaleString('id-ID')}`,
-    `INCOME  +Rp ${fin.totalIncome.toLocaleString('id-ID')}`,
-    `PAYLATER  Rp ${fin.paylaterDebt.toLocaleString('id-ID')}`,
-    `BUDGET  ${fin.budgetPct}% USED`,
+    ...fin.categoryData.map(c => `${c.name} ${c.percentage}% ${t('ticker.portfolio')}`),
+    `${t('ticker.remaining')}  Rp ${fin.monthRemaining.toLocaleString('id-ID')}`,
+    `${t('ticker.current')}  Rp ${currentCash.toLocaleString('id-ID')}`,
+    `${t('ticker.income')}  +Rp ${fin.totalIncome.toLocaleString('id-ID')}`,
+    `${t('ticker.paylater')}  Rp ${fin.paylaterDebt.toLocaleString('id-ID')}`,
+    `${t('ticker.budget')}  ${fin.budgetPct}% USED`,
   ];
 
   /* ══════════════════════════════════════════════════════════════
@@ -398,27 +411,33 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
       {/* ── TOP NAVBAR ── */}
       <nav style={{
         height:48, background:'#0c0c14', borderBottom:'1px solid #1e1e2e',
-        display:'flex', alignItems:'center', padding:'0 28px', gap:20,
+        display:'flex', alignItems:'center', padding:'0 12px',
         position:'sticky', top:0, zIndex:200, flexShrink:0,
+        gap:8, overflowX:'auto', overflowY:'hidden',
       }}>
-        <span className={spaceMono.className} style={{ fontSize:12, fontWeight:700, color:'#00d4ff', letterSpacing:'0.08em', whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:8 }}>
-          <span style={{ width:8, height:8, borderRadius:'50%', background:'#00d4ff', display:'inline-block', boxShadow:'0 0 7px #00d4ff' }} />
-          BINUSIAN-BUDGETING
+        {/* Logo */}
+        <span className={spaceMono.className} style={{
+          fontSize:11, fontWeight:700, color:'#00d4ff', letterSpacing:'0.08em',
+          whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:6, flexShrink:0,
+        }}>
+          <span style={{ width:7, height:7, borderRadius:'50%', background:'#00d4ff', display:'inline-block', boxShadow:'0 0 7px #00d4ff', flexShrink:0 }} />
+          {t('nav.logo')}
         </span>
 
-        <div style={{ flex:1 }} />
+        <div style={{ flex:1, minWidth:8 }} />
 
-        <div style={{ display:'flex', gap:2 }}>
+        {/* Nav tabs — scrollable row on mobile */}
+        <div style={{ display:'flex', gap:2, flexShrink:0 }}>
           {NAV_ITEMS.map(item => {
             const active = activeTab === item.id;
             return (
               <button key={item.id} onClick={() => setActiveTab(item.id)} style={{
-                fontFamily: spaceMono.style.fontFamily, fontSize:10, letterSpacing:'0.12em',
-                textTransform:'uppercase', padding:'5px 16px',
+                fontFamily: spaceMono.style.fontFamily, fontSize:10, letterSpacing:'0.1em',
+                textTransform:'uppercase', padding:'5px 12px', whiteSpace:'nowrap',
                 background: active ? 'rgba(0,212,255,0.08)' : 'transparent',
                 border: active ? '1px solid #00d4ff' : '1px solid transparent',
                 color: active ? '#00d4ff' : '#475569',
-                cursor:'pointer', transition:'all 0.15s', borderRadius:3,
+                cursor:'pointer', transition:'all 0.15s', borderRadius:3, flexShrink:0,
               }}>
                 {item.label}
               </button>
@@ -426,40 +445,94 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
           })}
         </div>
 
-        <div style={{ flex:1 }} />
+        <div style={{ flex:1, minWidth:8 }} />
 
-        <div className={spaceMono.className} style={{ fontSize:10, color:'#64748b', letterSpacing:'0.08em' }}>
+        {/* Clock — hidden on xs */}
+        <div className={spaceMono.className} style={{ fontSize:10, color:'#64748b', letterSpacing:'0.08em', whiteSpace:'nowrap', flexShrink:0 }}>
           {clockStr}
         </div>
-        <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:10, color:'#10b981' }}>
+
+        {/* LIVE indicator */}
+        <div style={{ display:'flex', alignItems:'center', gap:4, fontSize:10, color:'#10b981', flexShrink:0 }}>
           <span style={{ width:6, height:6, borderRadius:'50%', background:'#10b981', display:'inline-block', boxShadow:'0 0 6px #10b981' }} />
-          <span className={spaceMono.className} style={{ letterSpacing:'0.1em' }}>LIVE</span>
+          <span className={spaceMono.className} style={{ letterSpacing:'0.1em' }}>{t('nav.live')}</span>
+        </div>
+
+        {/* ── Language Switcher Dropdown ── */}
+        <div style={{ position:'relative', flexShrink:0 }} onClick={e => e.stopPropagation()}>
+          <button
+            id="lang-switcher-btn"
+            onClick={() => setLangDropOpen(o => !o)}
+            style={{
+              display:'flex', alignItems:'center', gap:4,
+              padding:'4px 8px', background:'transparent',
+              border:'1px solid rgba(0,212,255,0.2)', borderRadius:4,
+              color:'#00d4ff', cursor:'pointer', fontSize:10,
+              fontFamily: spaceMono.style.fontFamily, letterSpacing:'0.06em',
+              transition:'all 0.15s', whiteSpace:'nowrap',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background='rgba(0,212,255,0.08)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background='transparent'; }}
+            title={t('nav.lang.label')}
+          >
+            {lang === 'id' ? '🇮🇩' : '🇬🇧'}
+            <span style={{ fontSize:8, marginLeft:2, opacity:0.7 }}>▾</span>
+          </button>
+          {langDropOpen && (
+            <div style={{
+              position:'absolute', top:'calc(100% + 6px)', right:0,
+              background:'#0f0f17', border:'1px solid rgba(0,212,255,0.25)',
+              borderRadius:6, overflow:'hidden', minWidth:130,
+              boxShadow:'0 8px 24px rgba(0,0,0,0.5)', zIndex:999,
+            }}>
+              {(['id', 'en'] as Lang[]).map(l => (
+                <button
+                  key={l}
+                  onClick={() => { setLang(l); setLangDropOpen(false); }}
+                  style={{
+                    display:'block', width:'100%', textAlign:'left',
+                    padding:'8px 14px', background: lang === l ? 'rgba(0,212,255,0.1)' : 'transparent',
+                    border:'none', borderBottom:'1px solid #1e1e2e',
+                    color: lang === l ? '#00d4ff' : '#94a3b8',
+                    cursor:'pointer', fontSize:11,
+                    fontFamily: spaceMono.style.fontFamily, letterSpacing:'0.06em',
+                    transition:'background 0.12s',
+                  }}
+                  onMouseEnter={e => { if (lang !== l) (e.currentTarget as HTMLButtonElement).style.background='rgba(255,255,255,0.04)'; }}
+                  onMouseLeave={e => { if (lang !== l) (e.currentTarget as HTMLButtonElement).style.background='transparent'; }}
+                >
+                  {l === 'id' ? t('settings.lang_id') : t('settings.lang_en')}
+                  {lang === l && <span style={{ float:'right', color:'#00d4ff' }}>✓</span>}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* User avatar + logout */}
         {user && (
-          <div style={{ display:'flex', alignItems:'center', gap:8, marginLeft:8 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:6, marginLeft:4, flexShrink:0 }}>
             {user.user_metadata?.avatar_url && (
               <img
                 src={user.user_metadata.avatar_url}
                 alt="avatar"
-                style={{ width:26, height:26, borderRadius:'50%', border:'1px solid rgba(0,212,255,0.3)' }}
+                style={{ width:24, height:24, borderRadius:'50%', border:'1px solid rgba(0,212,255,0.3)', flexShrink:0 }}
               />
             )}
-            <span style={{ fontSize:10, color:'#475569', maxWidth:100, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+            <span style={{ fontSize:10, color:'#475569', maxWidth:80, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
               {user.user_metadata?.full_name || user.email}
             </span>
             <button
               onClick={() => supabase.auth.signOut()}
               style={{
-                fontSize:9, padding:'3px 10px',
+                fontSize:9, padding:'3px 8px',
                 background:'transparent', border:'1px solid rgba(239,68,68,0.3)',
                 color:'#ef4444', borderRadius:4, cursor:'pointer',
-                letterSpacing:'0.08em', transition:'all 0.15s',
+                letterSpacing:'0.08em', transition:'all 0.15s', whiteSpace:'nowrap',
               }}
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='rgba(239,68,68,0.1)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='transparent'; }}
-            >LOGOUT</button>
+            >{t('nav.logout')}</button>
           </div>
         )}
       </nav>
@@ -473,18 +546,18 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
 
             {/* GREETING HEADER */}
             <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-4 mb-6">
-              <div>
+              <div style={{ minWidth:0, maxWidth:'100%' }}>
                 <p className={spaceMono.className} style={{ fontSize:11, color:'#475569', letterSpacing:'0.12em', marginBottom:5 }}>
-                  // HALOO, SELAMAT {greeting}
+                  {t('dashboard.greeting_prefix')} {t(`greeting.${greeting}`)}
                 </p>
-                <h1 className={spaceMono.className} style={{ fontSize:44, fontWeight:700, color:'#00d4ff', lineHeight:1, letterSpacing:'-0.01em' }}>
+                <h1 className={spaceMono.className} style={{ fontSize:'clamp(28px,8vw,44px)', fontWeight:700, color:'#00d4ff', lineHeight:1, letterSpacing:'-0.01em', wordBreak:'break-word' }}>
                   {profile.nickname}
                 </h1>
               </div>
-              <div className={spaceMono.className} style={{ fontSize:11, color:'#475569', border:'1px solid #1e1e2e', padding:'7px 16px', background:'#0f0f17', display:'flex', gap:10, alignItems:'center', flexShrink:0 }}>
-                <span>{dateStr}</span>
+              <div className={spaceMono.className} style={{ fontSize:11, color:'#475569', border:'1px solid #1e1e2e', padding:'7px 16px', background:'#0f0f17', display:'flex', gap:10, alignItems:'center', flexShrink:0, maxWidth:'100%', overflow:'hidden' }}>
+                <span style={{ whiteSpace:'nowrap' }}>{dateStr}</span>
                 <span style={{ color:'#2d2d3d' }}>·</span>
-                <span style={{ color:'#f8fafc' }}>{clockStr}</span>
+                <span style={{ color:'#f8fafc', whiteSpace:'nowrap' }}>{clockStr}</span>
               </div>
             </div>
 
@@ -522,7 +595,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                     <div style={{ flex: 1, minWidth: 200 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                         <span style={{ fontSize: 9, color: isOver ? '#ef4444' : '#475569', letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 700 }}>
-                          MONTHLY BUDGET · {label}
+                          {t('budget.monthly')} · {label}
                         </span>
                         <span className={spaceMono.className} style={{ fontSize: 11, color: isOver ? '#ef4444' : '#00d4ff', fontWeight: 700 }}>
                           Rp {spent.toLocaleString('id-ID')} / Rp {MONTHLY_BUDGET.toLocaleString('id-ID')}
@@ -541,12 +614,12 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                       {isOver ? (
                         <>
                           <div className={spaceMono.className} style={{ fontSize: 12, fontWeight: 700, color: '#ef4444', marginBottom: 2 }}>+Rp {Math.abs(remaining).toLocaleString('id-ID')}</div>
-                          <div style={{ fontSize: 8, color: '#ef4444', letterSpacing: '0.1em', border: '1px solid #ef4444', padding: '2px 8px', borderRadius: 3, background: 'rgba(239,68,68,0.12)', whiteSpace: 'nowrap' }}>⚠ LIMIT TERLAMPAUI</div>
+                          <div style={{ fontSize: 8, color: '#ef4444', letterSpacing: '0.1em', border: '1px solid #ef4444', padding: '2px 8px', borderRadius: 3, background: 'rgba(239,68,68,0.12)', whiteSpace: 'nowrap' }}>{t('budget.over_label')}</div>
                         </>
                       ) : (
                         <>
                           <div className={spaceMono.className} style={{ fontSize: 12, fontWeight: 700, color: '#10b981', marginBottom: 2 }}>Rp {remaining.toLocaleString('id-ID')}</div>
-                          <div style={{ fontSize: 8, color: '#10b981', letterSpacing: '0.1em', border: '1px solid #10b981', padding: '2px 8px', borderRadius: 3, background: 'rgba(16,185,129,0.1)', whiteSpace: 'nowrap' }}>● SISA BULAN INI</div>
+                          <div style={{ fontSize: 8, color: '#10b981', letterSpacing: '0.1em', border: '1px solid #10b981', padding: '2px 8px', borderRadius: 3, background: 'rgba(16,185,129,0.1)', whiteSpace: 'nowrap' }}>{t('budget.remaining')}</div>
                         </>
                       )}
                     </div>
@@ -565,8 +638,8 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                   >
                     {/* top gradient bar */}
                     <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background:'linear-gradient(90deg, transparent, #00d4ff, #ffd700, transparent)', opacity:0.7 }} />
-                    <p className={spaceMono.className} style={{ fontSize:11, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:12 }}>💰 Sisa Dana Aman Bulan Ini</p>
-                    <p className={spaceMono.className} style={{ fontSize:'clamp(32px, 6vw, 52px)', fontWeight:700, color:'#ffd700', textShadow:'0 0 32px rgba(255,215,0,0.35)', letterSpacing:'-0.02em', lineHeight:1, marginBottom:14 }}>
+                    <p className={spaceMono.className} style={{ fontSize:11, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:12 }}>{t('dashboard.safe_funds')}</p>
+                    <p className={spaceMono.className} style={{ fontSize:'clamp(28px, 6vw, 52px)', fontWeight:700, color:'#ffd700', textShadow:'0 0 32px rgba(255,215,0,0.35)', letterSpacing:'-0.02em', lineHeight:1, marginBottom:14 }}>
                       Rp {Math.max(0, remaining).toLocaleString('id-ID')}
                     </p>
                     <div>
@@ -580,7 +653,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                             ? { background:'rgba(255,149,0,0.1)', border:'1px solid rgba(255,149,0,0.3)', color:'#ff9500', boxShadow:'0 0 12px rgba(255,149,0,0.15)' }
                             : { background:'rgba(0,255,136,0.1)', border:'1px solid rgba(0,255,136,0.3)', color:'#00ff88', boxShadow:'0 0 12px rgba(0,255,136,0.15)' }),
                       }}>
-                        {isOver ? '⚠ Sudah over budget' : `✓ Aman untuk ~${bisaJajanHariLocal} hari lagi`}
+                        {isOver ? t('dashboard.over_budget') : t('dashboard.safe_days', { n: bisaJajanHariLocal })}
                       </span>
                     </div>
                     <button
@@ -595,7 +668,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                       onMouseEnter={e => { const el=e.currentTarget as HTMLButtonElement; el.style.background='rgba(0,212,255,0.18)'; el.style.boxShadow='0 0 16px rgba(0,212,255,0.3)'; }}
                       onMouseLeave={e => { const el=e.currentTarget as HTMLButtonElement; el.style.background='rgba(0,212,255,0.08)'; el.style.boxShadow='none'; }}
                     >
-                      LIHAT ANALISIS DETAIL →
+                      {t('dashboard.see_analysis')}
                     </button>
                   </div>
 
@@ -608,7 +681,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                     onMouseLeave={e => { const el=e.currentTarget as HTMLDivElement; el.style.borderColor='#1e1e2e'; el.style.boxShadow='none'; }}
                   >
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
-                      <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase' }}>🕐 TRANSAKSI HARI INI</p>
+                      <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase' }}>{t('dashboard.today_txs')}</p>
                       {todayTxs.length > 0 && (
                         <span className={spaceMono.className} style={{ fontSize:12, fontWeight:700, color:'#ef4444' }}>
                           −Rp {todaySpentLocal.toLocaleString('id-ID')}
@@ -620,10 +693,10 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                       /* New user empty state */
                       <div style={{ textAlign:'center', padding:'32px 20px' }}>
                         <div style={{ fontSize:48, marginBottom:12, animation:'float-anim 3s ease-in-out infinite' }}>🚀</div>
-                        <p className={spaceMono.className} style={{ fontSize:14, fontWeight:700, color:'#f8fafc', marginBottom:10 }}>Sistem Siap Monitor Arus Kasmu</p>
+                        <p className={spaceMono.className} style={{ fontSize:14, fontWeight:700, color:'#f8fafc', marginBottom:10 }}>{t('dashboard.empty_title')}</p>
                         <p style={{ fontSize:12, color:'#475569', lineHeight:1.7, maxWidth:440, margin:'0 auto 20px' }}>
-                          Mulai dengan mencatat pengeluaran pertamamu hari ini —{' '}
-                          <em style={{ color:'#00d4ff' }}>mungkin pengeluaran untuk beli biji kopi V60, servis motor, atau top-up RDN?</em>
+                          {t('dashboard.empty_desc')}{' '}
+                          <em style={{ color:'#00d4ff' }}>{t('dashboard.empty_hint')}</em>
                         </p>
                         <div style={{ display:'flex', gap:10, justifyContent:'center', flexWrap:'wrap' }}>
                           <button
@@ -633,7 +706,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform='translateY(-2px)'; (e.currentTarget as HTMLButtonElement).style.boxShadow='0 0 32px rgba(0,212,255,0.6)'; }}
                             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform='translateY(0)'; (e.currentTarget as HTMLButtonElement).style.boxShadow='0 0 20px rgba(0,212,255,0.4)'; }}
                           >
-                            ➕ CATAT SEKARANG
+                            {t('dashboard.start_now')}
                           </button>
                         </div>
                       </div>
@@ -641,9 +714,9 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                       /* Has data but no tx today */
                       <div style={{ textAlign:'center', padding:'28px 20px' }}>
                         <div style={{ fontSize:32, marginBottom:10 }}>✨</div>
-                        <p style={{ fontSize:12, color:'#475569', marginBottom:8 }}>Belum ada pengeluaran hari ini</p>
+                        <p style={{ fontSize:12, color:'#475569', marginBottom:8 }}>{t('dashboard.no_today')}</p>
                         <p style={{ fontSize:11, color:'#334155', lineHeight:1.6 }}>
-                          Catat pengeluaran kecil sekalipun — bubble tea, parkir, atau jajan pasar.
+                          {t('dashboard.no_today_hint')}
                         </p>
                       </div>
                     ) : (
@@ -667,7 +740,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                         })}
                         {todayTxs.length > 5 && (
                           <button onClick={() => setActiveTab('HISTORY')} className={spaceMono.className} style={{ fontSize:9, color:'#475569', background:'none', border:'none', cursor:'pointer', letterSpacing:'0.1em', textTransform:'uppercase', padding:'4px 0' }}>
-                            +{todayTxs.length - 5} transaksi lainnya →
+                            {t('dashboard.more_txs', { n: todayTxs.length - 5 })}
                           </button>
                         )}
                       </div>
@@ -685,7 +758,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                       onMouseEnter={e => { const el=e.currentTarget as HTMLButtonElement; el.style.borderColor='rgba(0,212,255,0.5)'; el.style.color='#00d4ff'; el.style.background='rgba(0,212,255,0.06)'; el.style.boxShadow='0 0 12px rgba(0,212,255,0.15)'; }}
                       onMouseLeave={e => { const el=e.currentTarget as HTMLButtonElement; el.style.borderColor='rgba(0,212,255,0.2)'; el.style.color='#475569'; el.style.background='none'; el.style.boxShadow='none'; }}
                     >
-                      ➕ CATAT PENGELUARAN
+                      {t('dashboard.add_tx')}
                     </button>
                   </div>
                 </>
@@ -697,10 +770,10 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
         {/* ════════════════ HISTORY TAB ════════════════ */}
         {activeTab === 'HISTORY' && (
           <div>
-            <h2 className={spaceMono.className} style={{ fontSize:18, fontWeight:700, color:'#f8fafc', marginBottom:6 }}>Transaction Log</h2>
+            <h2 className={spaceMono.className} style={{ fontSize:18, fontWeight:700, color:'#f8fafc', marginBottom:6 }}>{t('history.title')}</h2>
             <p style={{ fontSize:11, color:'#475569', marginBottom:16, letterSpacing:'0.06em' }}>
-              Editable ·{' '}
-              {filterMonth === 'all' ? 'all periods' : (() => {
+              {t('history.subtitle')} ·{' '}
+              {filterMonth === 'all' ? t('history.all_periods').toLowerCase() : (() => {
                 const [y, m] = filterMonth.split('-');
                 const MN = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
                 return `${MN[parseInt(m)-1]} ${y}`;
@@ -709,11 +782,11 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
 
             {/* ── PERIOD FILTER ── */}
             <div style={{ marginBottom:16, background:'#0f0f17', border:'1px solid #1e1e2e', borderRadius:6, padding:'14px 18px' }}>
-              <p style={{ fontSize:8, color:'#334155', letterSpacing:'0.16em', textTransform:'uppercase', marginBottom:10 }}>⬡ SELECT DATE / MONTH / YEAR</p>
+              <p style={{ fontSize:8, color:'#334155', letterSpacing:'0.16em', textTransform:'uppercase', marginBottom:10 }}>{t('history.filter_label')}</p>
               <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
                 {(['all', ...historyFilters] as string[]).map(opt => {
                   const active = filterMonth === opt;
-                  let label = 'ALL PERIODS';
+                  let label = t('history.all_periods');
                   if (opt !== 'all') {
                     const [y, m] = opt.split('-');
                     const MN = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
@@ -778,7 +851,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                       {isOver ? '+' : ''}Rp {Math.abs(remaining).toLocaleString('id-ID')}
                     </div>
                     <div style={{ fontSize:7, color: isOver ? '#ef4444' : '#10b981', letterSpacing:'0.1em', border: `1px solid ${isOver ? '#ef4444' : '#10b981'}`, padding:'2px 7px', borderRadius:3, background: isOver ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.08)', whiteSpace:'nowrap' }}>
-                      {isOver ? '⚠ OVER LIMIT' : '● SISA BUDGET'}
+                      {isOver ? t('history.over_limit') : t('history.remaining')}
                     </div>
                   </div>
                 </div>
@@ -787,7 +860,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
 
             {/* transaction count */}
             <p style={{ fontSize:9, color:'#334155', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:12 }}>
-              {filteredTransactions.length} transaksi ditemukan
+              {t('history.tx_found', { n: filteredTransactions.length })}
             </p>
 
             <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
@@ -799,8 +872,8 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                     <div key={trx.id} style={{ background:'#0f0f17', border:'1px solid rgba(0,212,255,0.4)', borderRadius:8, padding:20 }}>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                         {[
-                          { label:'Deskripsi',    type:'text',          val:editingTx.description, key:'description' },
-                          { label:'Nominal (Rp)', type:'number',        val:editingTx.amount,      key:'amount'      },
+                          { label: t('history.desc_label'),   type:'text',   val:editingTx.description, key:'description' },
+                          { label: t('history.amount_label'), type:'number', val:editingTx.amount,       key:'amount'      },
                         ].map(f => (
                           <div key={f.key}>
                             <label style={{ display:'block', fontSize:9, color:'#475569', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:6 }}>{f.label}</label>
@@ -810,13 +883,13 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                           </div>
                         ))}
                         <div>
-                          <label style={{ display:'block', fontSize:9, color:'#475569', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:6 }}>Tanggal &amp; Waktu</label>
+                          <label style={{ display:'block', fontSize:9, color:'#475569', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:6 }}>{t('history.date_label')}</label>
                           <input type="datetime-local" value={editingTx.timestamp.slice(0,16)}
                             onChange={e => setEditingTx({ ...editingTx, timestamp: new Date(e.target.value).toISOString() })}
                             style={{ width:'100%', background:'#1a1a24', border:'1px solid #2d2d3d', borderRadius:6, padding:'9px 12px', color:'#f8fafc', fontSize:12, outline:'none' }} />
                         </div>
                         <div>
-                          <label style={{ display:'block', fontSize:9, color:'#475569', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:6 }}>Kategori</label>
+                          <label style={{ display:'block', fontSize:9, color:'#475569', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:6 }}>{t('history.category_label')}</label>
                           <select value={editingTx.category} onChange={e => setEditingTx({ ...editingTx, category: e.target.value })}
                             style={{ width:'100%', background:'#1a1a24', border:'1px solid #2d2d3d', borderRadius:6, padding:'9px 12px', color:'#f8fafc', fontSize:12, outline:'none' }}>
                             {['PAYLATER','EQUIPMENT','FOOD & BEVERAGE','TRANSPORTATION','ENTERTAINMENT','INVESTMENT','INCOME','CASH','OTHER'].map(c => <option key={c} value={c}>{c}</option>)}
@@ -824,8 +897,8 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                         </div>
                       </div>
                       <div style={{ display:'flex', justifyContent:'flex-end', gap:10 }}>
-                        <button onClick={() => setEditingTx(null)} style={{ padding:'8px 16px', background:'none', border:'1px solid #2d2d3d', color:'#64748b', borderRadius:6, cursor:'pointer', fontSize:11 }}>Batal</button>
-                        <button onClick={saveEditedTransaction} style={{ padding:'8px 16px', background:'#00d4ff', color:'#000', border:'none', borderRadius:6, cursor:'pointer', fontSize:11, fontWeight:700 }}>Simpan</button>
+                        <button onClick={() => setEditingTx(null)} style={{ padding:'8px 16px', background:'none', border:'1px solid #2d2d3d', color:'#64748b', borderRadius:6, cursor:'pointer', fontSize:11 }}>{t('history.cancel')}</button>
+                        <button onClick={saveEditedTransaction} style={{ padding:'8px 16px', background:'#00d4ff', color:'#000', border:'none', borderRadius:6, cursor:'pointer', fontSize:11, fontWeight:700 }}>{t('history.save')}</button>
                       </div>
                     </div>
                   );
@@ -852,7 +925,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                         {trx.type === 'DEBIT' ? '−' : '+'} Rp {trx.amount.toLocaleString('id-ID')}
                       </p>
                       <p style={{ fontSize:9, color:'#334155', letterSpacing:'0.1em', textTransform:'uppercase', marginTop:3 }}>
-                        {trx.category === 'PAYLATER' ? 'Utang' : trx.type === 'CREDIT' ? 'Pemasukan' : 'Pengeluaran'}
+                        {trx.category === 'PAYLATER' ? t('misc.utang') : trx.type === 'CREDIT' ? t('misc.pemasukan') : t('misc.pengeluaran')}
                       </p>
                     </div>
                     <button onClick={() => setEditingTx({ ...trx })}
@@ -871,14 +944,14 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
           <div>
 
             {/* ── ADVANCED KPI METRICS ── */}
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))', gap:12, marginBottom:16 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:12, marginBottom:16 }}>
               {[
-                { label:'PAYLATER', value:`Rp ${fin.paylaterDebt.toLocaleString('id-ID')}`, color:'#ef4444', sub:'Active debt' },
-                { label:'CURRENT CASH', value:`Rp ${currentCash.toLocaleString('id-ID')}`, color:'#00d4ff', sub:'Liquid' },
-                { label:'INCOME ADDED', value:`+ Rp ${fin.totalIncome.toLocaleString('id-ID')}`, color:'#10b981', sub:'Dividen + Gaji' },
-                { label:'WORTH REMAINING', value:`Rp ${fin.monthRemaining.toLocaleString('id-ID')}`, color: fin.monthRemaining < 0 ? '#ef4444' : '#f8fafc', sub: fin.monthRemaining >= 0 ? 'On track' : 'Overrun' },
-                { label:'DEBT RATIO', value: fin.totalAllocation > 0 ? `${((fin.paylaterDebt/fin.totalAllocation)*100).toFixed(1)}%` : '0%', color: fin.paylaterDebt > fin.totalAllocation*0.3 ? '#ef4444' : '#10b981', sub:'PayLater vs total' },
-                { label:'INVEST GROWTH', value:`+Rp ${(fin.totalIncome/1000).toFixed(0)}k`, color:'#a855f7', sub:'Est. from income' },
+                { label: t('analytics.paylater'),        value:`Rp ${fin.paylaterDebt.toLocaleString('id-ID')}`,       color:'#ef4444', sub: t('analytics.active_debt') },
+                { label: t('analytics.current_cash'),    value:`Rp ${currentCash.toLocaleString('id-ID')}`,            color:'#00d4ff', sub: t('analytics.liquid') },
+                { label: t('analytics.income_added'),    value:`+ Rp ${fin.totalIncome.toLocaleString('id-ID')}`,      color:'#10b981', sub: t('analytics.dividen') },
+                { label: t('analytics.worth_remaining'), value:`Rp ${fin.monthRemaining.toLocaleString('id-ID')}`,     color: fin.monthRemaining < 0 ? '#ef4444' : '#f8fafc', sub: fin.monthRemaining >= 0 ? t('analytics.on_track') : t('analytics.overrun') },
+                { label: t('analytics.debt_ratio'),      value: fin.totalAllocation > 0 ? `${((fin.paylaterDebt/fin.totalAllocation)*100).toFixed(1)}%` : '0%', color: fin.paylaterDebt > fin.totalAllocation*0.3 ? '#ef4444' : '#10b981', sub: t('analytics.paylater_vs') },
+                { label: t('analytics.invest_growth'),   value:`+Rp ${(fin.totalIncome/1000).toFixed(0)}k`,            color:'#a855f7', sub: t('analytics.est_income') },
               ].map(card => (
                 <div key={card.label} style={{
                   background:'#0f0f17', border:'1px solid #1e1e2e', borderTop:`2px solid ${card.color}`,
@@ -900,7 +973,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                 onMouseEnter={e => { const el=e.currentTarget as HTMLDivElement; el.style.borderColor='#2d2d3d'; el.style.boxShadow='0 8px 28px rgba(0,0,0,0.3)'; }}
                 onMouseLeave={e => { const el=e.currentTarget as HTMLDivElement; el.style.borderColor='#1e1e2e'; el.style.boxShadow='none'; }}
               >
-                <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:16 }}>🍩 ALLOCATION BREAKDOWN</p>
+                <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:16 }}>{t('analytics.allocation')}</p>
                 <div style={{ display:'flex', gap:18, alignItems:'center', marginBottom:16 }}>
                   <div style={{ position:'relative', width:140, height:140, flexShrink:0 }}>
                     <svg width="140" height="140" viewBox="0 0 140 140" style={{ display:'block', transform:'rotate(-90deg)' }}>
@@ -965,7 +1038,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                     <div style={{ display:'flex', flexDirection:'column', gap:5, marginTop:4 }}>
                       {expandedCategory === 'CASH' ? (
                         <div style={{ display:'flex', justifyContent:'space-between', padding:'8px 12px', background:'rgba(255,255,255,0.03)', borderRadius:4, border:'1px solid #1e1e2e' }}>
-                          <span style={{ fontSize:11, color:'#94a3b8' }}>Liquid Cash Reserve</span>
+                          <span style={{ fontSize:11, color:'#94a3b8' }}>{t('misc.liquid_cash')}</span>
                           <span className={spaceMono.className} style={{ fontWeight:700, color:CATEGORY_COLORS['CASH'], fontSize:11 }}>Rp {currentCash.toLocaleString('id-ID')}</span>
                         </div>
                       ) : (
@@ -987,23 +1060,23 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                 onMouseLeave={e => { const el=e.currentTarget as HTMLDivElement; el.style.borderColor='rgba(123,97,255,0.2)'; el.style.boxShadow='none'; }}
               >
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
-                  <p style={{ fontSize:9, color:'#7b61ff', letterSpacing:'0.14em', textTransform:'uppercase' }}>🤖 SHORT-ANALYSIS · AI</p>
-                  <span style={{ fontSize:8, padding:'2px 9px', color:'#a855f7', border:'1px solid #a855f7', background:'rgba(168,85,247,0.1)', letterSpacing:'0.1em', borderRadius:2 }}>AI-GENERATED</span>
+                  <p style={{ fontSize:9, color:'#7b61ff', letterSpacing:'0.14em', textTransform:'uppercase' }}>{t('analytics.ai_short')}</p>
+                  <span style={{ fontSize:8, padding:'2px 9px', color:'#a855f7', border:'1px solid #a855f7', background:'rgba(168,85,247,0.1)', letterSpacing:'0.1em', borderRadius:2 }}>{t('analytics.ai_generated')}</span>
                 </div>
 
                 {transactions.length < 5 ? (
                   /* Gate: need ≥5 transactions */
                   <div style={{ textAlign:'center', padding:'32px 20px' }}>
                     <div style={{ fontSize:36, marginBottom:10, opacity:0.5 }}>🤖</div>
-                    <p className={spaceMono.className} style={{ fontSize:11, color:'#7b61ff', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:10 }}>HAEGUSA-AI Short Analysis</p>
+                    <p className={spaceMono.className} style={{ fontSize:11, color:'#7b61ff', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:10 }}>{t('analytics.gate_title')}</p>
                     <p style={{ fontSize:12, color:'#475569', lineHeight:1.65, maxWidth:300, margin:'0 auto 16px' }}>
-                      Analisis AI akan muncul setelah kamu mencatat minimal <strong style={{color:'#00d4ff'}}>5 transaksi</strong>.<br/>
-                      Saat ini: <span style={{color:'#00d4ff'}}>{transactions.length}</span> transaksi.
+                      {t('analytics.gate_desc1')} <strong style={{color:'#00d4ff'}}>5 {t('analytics.gate_progress')}</strong>.<br/>
+                      {t('analytics.gate_desc2')} <span style={{color:'#00d4ff'}}>{transactions.length}</span>.
                     </p>
                     <div style={{ height:4, borderRadius:2, background:'rgba(255,255,255,0.05)', maxWidth:200, margin:'0 auto', overflow:'hidden' }}>
                       <div style={{ height:'100%', width:`${Math.min(100,(transactions.length/5)*100)}%`, background:'linear-gradient(90deg,#7b61ff,#00d4ff)', borderRadius:2, transition:'width 0.6s', boxShadow:'0 0 6px rgba(0,212,255,0.4)' }} />
                     </div>
-                    <p className={spaceMono.className} style={{ fontSize:10, color:'#334155', marginTop:8 }}>{transactions.length}/5 transaksi</p>
+                    <p className={spaceMono.className} style={{ fontSize:10, color:'#334155', marginTop:8 }}>{transactions.length}/5 {t('analytics.gate_progress')}</p>
                   </div>
                 ) : (
                   /* Unlocked analysis */
@@ -1051,7 +1124,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                   onMouseEnter={e => { if (!chatOpen) { const el=e.currentTarget as HTMLButtonElement; el.style.background='rgba(0,212,255,0.18)'; el.style.boxShadow='0 0 16px rgba(0,212,255,0.3)'; } }}
                   onMouseLeave={e => { if (!chatOpen) { const el=e.currentTarget as HTMLButtonElement; el.style.background='rgba(0,212,255,0.08)'; el.style.boxShadow='none'; } }}
                 >
-                  🤖 CHAT HAEGUSA-AI
+                  {t('analytics.chat_btn')}
                 </button>
 
                 {/* Chat panel overlay */}
@@ -1064,7 +1137,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom:'1px solid #1e1e2e', background:'#0f0f17', flexShrink:0 }}>
                       <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                         <span style={{ width:8, height:8, borderRadius:'50%', background:'#00d4ff', display:'inline-block', boxShadow:'0 0 6px #00d4ff' }} />
-                        <span className={spaceMono.className} style={{ fontSize:10, color:'#00d4ff', letterSpacing:'0.1em' }}>HAEGUSA-AI · Gemini Flash</span>
+                        <span className={spaceMono.className} style={{ fontSize:10, color:'#00d4ff', letterSpacing:'0.1em' }}>{t('analytics.chat_header')}</span>
                       </div>
                       <button onClick={() => setChatOpen(false)} style={{ background:'none', border:'none', color:'#475569', cursor:'pointer', fontSize:16, lineHeight:1 }}>x</button>
                     </div>
@@ -1072,8 +1145,8 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                       {chatMsgs.length === 0 && (
                         <div style={{ textAlign:'center', padding:'20px 10px' }}>
                           <div style={{ fontSize:24, marginBottom:8 }}>🤖</div>
-                          <p style={{ fontSize:10, color:'#475569', lineHeight:1.6 }}>Halo! Saya <strong style={{color:'#00d4ff'}}>HAEGUSA-AI</strong>.<br/>Tanya apa saja soal keuangan kamu.</p>
-                          {["Budget bulan ini gimana?","Saran untuk kurangi pengeluaran?","Analisis utang PayLater ku."].map(q => (
+                          <p style={{ fontSize:10, color:'#475569', lineHeight:1.6 }}>{t('analytics.chat_welcome').split('\n').map((line, i) => <span key={i}>{i > 0 && <br/>}{line}</span>)}</p>
+                          {[t('analytics.chat_q1'), t('analytics.chat_q2'), t('analytics.chat_q3')].map(q => (
                             <button key={q} onClick={() => { setChatInput(q); }} style={{ display:'block', width:'100%', margin:'4px 0', padding:'6px 10px', background:'rgba(0,212,255,0.06)', border:'1px solid rgba(0,212,255,0.2)', color:'#64748b', borderRadius:4, cursor:'pointer', fontSize:9, textAlign:'left', letterSpacing:'0.04em' }}>{q}</button>
                           ))}
                         </div>
@@ -1090,7 +1163,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                       )}
                     </div>
                     <div style={{ display:'flex', gap:6, padding:'10px 14px', borderTop:'1px solid #1e1e2e', flexShrink:0 }}>
-                      <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key==='Enter'&&!e.shiftKey&&sendChat()} placeholder="Tanya soal keuangan kamu..." style={{ flex:1, background:'#1a1a24', border:'1px solid #2d2d3d', borderRadius:6, padding:'8px 12px', color:'#f8fafc', fontSize:11, outline:'none' }} />
+                      <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key==='Enter'&&!e.shiftKey&&sendChat()} placeholder={t('analytics.chat_placeholder')} style={{ flex:1, background:'#1a1a24', border:'1px solid #2d2d3d', borderRadius:6, padding:'8px 12px', color:'#f8fafc', fontSize:11, outline:'none' }} />
                       <button onClick={sendChat} disabled={chatLoading} style={{ padding:'8px 14px', background: chatLoading?'#1e1e2e':'#00d4ff', border:'none', borderRadius:6, color:'#000', fontWeight:700, fontSize:11, cursor: chatLoading?'not-allowed':'pointer' }}>↑</button>
                     </div>
                   </div>
@@ -1102,15 +1175,15 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
             <div style={{ background:'#0f0f17', border:'1px solid #1e1e2e', borderTop:'2px solid #7b61ff', borderRadius:8, padding:28, marginBottom:16, display:'flex', gap:20 }}>
               <div style={{ width:56, height:56, background:'rgba(123,97,255,0.12)', border:'1px solid rgba(123,97,255,0.4)', borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>👔</div>
               <div style={{ flex: 1 }}>
-                <h2 className={spaceMono.className} style={{ fontSize:16, fontWeight:700, color:'#f8fafc', textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:4 }}>Quantitative AI Analyst</h2>
-                <p style={{ fontSize:11, color:'#475569', letterSpacing:'0.06em', marginBottom:12 }}>Holistic 10-Step Ahead Strategy · Personalized Assessment</p>
+                <h2 className={spaceMono.className} style={{ fontSize:16, fontWeight:700, color:'#f8fafc', textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:4 }}>{t('analytics.quant_title')}</h2>
+                <p style={{ fontSize:11, color:'#475569', letterSpacing:'0.06em', marginBottom:12 }}>{t('analytics.quant_sub')}</p>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                  <span style={{ fontSize:9, padding:'3px 10px', border:'1px solid rgba(123,97,255,0.5)', color:'#7b61ff', background:'rgba(123,97,255,0.1)', letterSpacing:'0.12em', textTransform:'uppercase', borderRadius:3 }}>🤖 AI-Generated · Live Data</span>
+                  <span style={{ fontSize:9, padding:'3px 10px', border:'1px solid rgba(123,97,255,0.5)', color:'#7b61ff', background:'rgba(123,97,255,0.1)', letterSpacing:'0.12em', textTransform:'uppercase', borderRadius:3 }}>{t('analytics.quant_badge')}</span>
                   {!aiAssessment && !loadingAssessment && (
-                    <button onClick={fetchAssessment} style={{ background:'transparent', border:'1px solid #1e1e2e', color:'#94a3b8', fontSize:10, padding:'4px 10px', borderRadius:4, cursor:'pointer' }}>Generate Assessment</button>
+                    <button onClick={fetchAssessment} style={{ background:'transparent', border:'1px solid #1e1e2e', color:'#94a3b8', fontSize:10, padding:'4px 10px', borderRadius:4, cursor:'pointer' }}>{t('analytics.generate_btn')}</button>
                   )}
                   {aiAssessment && (
-                    <button onClick={fetchAssessment} style={{ background:'transparent', border:'1px solid #1e1e2e', color:'#94a3b8', fontSize:10, padding:'4px 10px', borderRadius:4, cursor:'pointer' }}>Refresh</button>
+                    <button onClick={fetchAssessment} style={{ background:'transparent', border:'1px solid #1e1e2e', color:'#94a3b8', fontSize:10, padding:'4px 10px', borderRadius:4, cursor:'pointer' }}>{t('analytics.refresh_btn')}</button>
                   )}
                 </div>
               </div>
@@ -1119,7 +1192,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
             {loadingAssessment ? (
               <div style={{ padding: 40, textAlign: 'center' }}>
                 <div style={{ width:40, height:40, border:'3px solid rgba(123,97,255,0.2)', borderTopColor:'#7b61ff', borderRadius:'50%', animation:'spin 1s linear infinite', margin:'0 auto 16px' }} />
-                <p className={spaceMono.className} style={{ color:'#7b61ff', fontSize:12, letterSpacing:'0.1em' }}>MENGANALISIS PORTOFOLIO...</p>
+                <p className={spaceMono.className} style={{ color:'#7b61ff', fontSize:12, letterSpacing:'0.1em' }}>{t('analytics.loading')}</p>
                 <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
               </div>
             ) : aiAssessment ? (
@@ -1139,7 +1212,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                 <div style={{ background:'#0f0f17', border:'1px solid #1e1e2e', borderRadius:8, padding:'20px 24px' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:18, paddingBottom:12, borderBottom:'1px solid #1e1e2e' }}>
                     <span style={{ fontSize:18 }}>🎯</span>
-                    <span style={{ fontSize:14, fontWeight:700, color:'#f8fafc', textTransform:'uppercase', letterSpacing:'0.02em' }}>Strategic Recommendations</span>
+                    <span style={{ fontSize:14, fontWeight:700, color:'#f8fafc', textTransform:'uppercase', letterSpacing:'0.02em' }}>{t('analytics.strategic_rec')}</span>
                   </div>
                   <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
                     {aiAssessment.recommendations?.map((step: any) => (
@@ -1166,15 +1239,21 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
         {/* ════════════════ SETTINGS TAB ════════════════ */}
         {activeTab === 'OPTIONS' && (
           <div>
-            <h2 className={spaceMono.className} style={{ fontSize:18, fontWeight:700, color:'#f8fafc', marginBottom:6 }}>Settings</h2>
-            <p style={{ fontSize:11, color:'#475569', marginBottom:28, letterSpacing:'0.06em' }}>Profile · Security · Account Master</p>
+            <h2 className={spaceMono.className} style={{ fontSize:18, fontWeight:700, color:'#f8fafc', marginBottom:6 }}>{t('settings.title')}</h2>
+            <p style={{ fontSize:11, color:'#475569', marginBottom:28, letterSpacing:'0.06em' }}>{t('settings.subtitle')}</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-7">
               {/* Profile */}
               <div style={{ background:'#0f0f17', border:'1px solid #1e1e2e', borderTop:'2px solid #7b61ff', borderRadius:8, padding:22 }}>
-                <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:16, paddingBottom:12, borderBottom:'1px solid #1e1e2e' }}>User Profile</p>
+                <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:16, paddingBottom:12, borderBottom:'1px solid #1e1e2e' }}>{t('settings.profile')}</p>
                 {isEditingProfile ? (
                   <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-                    {[{label:'Nama Lengkap',key:'fullName',val:tempProfile.fullName},{label:'Nickname',key:'nickname',val:tempProfile.nickname},{label:'Phone',key:'phone',val:tempProfile.phone},{label:'Email',key:'email',val:tempProfile.email},{label:'Address',key:'address',val:tempProfile.address}].map(f => (
+                    {[
+                      {label: t('settings.full_name'), key:'fullName', val:tempProfile.fullName},
+                      {label: t('settings.nickname'),  key:'nickname', val:tempProfile.nickname},
+                      {label: t('settings.phone'),     key:'phone',    val:tempProfile.phone},
+                      {label: t('settings.email'),     key:'email',    val:tempProfile.email},
+                      {label: t('settings.address'),   key:'address',  val:tempProfile.address},
+                    ].map(f => (
                       <div key={f.key}>
                         <label style={{ display:'block', fontSize:9, color:'#475569', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:5 }}>{f.label}</label>
                         <input value={f.val} onChange={e => setTempProfile({...tempProfile,[f.key]:e.target.value})}
@@ -1182,8 +1261,8 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                       </div>
                     ))}
                     <div style={{ display:'flex', gap:8, marginTop:4 }}>
-                      <button onClick={saveProfile} style={{ flex:1, padding:'9px', background:'#10b981', border:'none', color:'#000', fontWeight:700, fontSize:11, borderRadius:6, cursor:'pointer' }}>Simpan</button>
-                      <button onClick={() => setIsEditingProfile(false)} style={{ flex:1, padding:'9px', background:'none', border:'1px solid #2d2d3d', color:'#64748b', fontSize:11, borderRadius:6, cursor:'pointer' }}>Batal</button>
+                      <button onClick={saveProfile} style={{ flex:1, padding:'9px', background:'#10b981', border:'none', color:'#000', fontWeight:700, fontSize:11, borderRadius:6, cursor:'pointer' }}>{t('settings.save')}</button>
+                      <button onClick={() => setIsEditingProfile(false)} style={{ flex:1, padding:'9px', background:'none', border:'1px solid #2d2d3d', color:'#64748b', fontSize:11, borderRadius:6, cursor:'pointer' }}>{t('settings.cancel')}</button>
                     </div>
                   </div>
                 ) : (
@@ -1206,10 +1285,10 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                       <div>
                         <p style={{ fontWeight:700, color:'#f8fafc', fontSize:14, marginBottom:2 }}>{profile.fullName}</p>
                         <p style={{ color:'#00d4ff', fontSize:12 }}>&quot;{profile.nickname}&quot;</p>
-                        <p style={{ color:'#334155', fontSize:9, marginTop:4, letterSpacing:'0.08em' }}>Tap avatar to change photo (PNG/JPG)</p>
+                        <p style={{ color:'#334155', fontSize:9, marginTop:4, letterSpacing:'0.08em' }}>{t('settings.avatar_hint')}</p>
                       </div>
                     </div>
-                    {[{label:'Phone',val:profile.phone},{label:'Email',val:profile.email},{label:'Address',val:profile.address}].map(row => (
+                    {[{label:t('settings.phone'),val:profile.phone},{label:t('settings.email'),val:profile.email},{label:t('settings.address'),val:profile.address}].map(row => (
                       <div key={row.label} style={{ display:'flex', justifyContent:'space-between', padding:'9px 0', borderBottom:'1px solid #1e1e2e', gap:12 }}>
                         <span style={{ fontSize:9, color:'#475569', letterSpacing:'0.12em', textTransform:'uppercase', flexShrink:0 }}>{row.label}</span>
                         <span style={{ fontSize:11, color:'#94a3b8', textAlign:'right', wordBreak:'break-all' }}>{row.val}</span>
@@ -1217,17 +1296,17 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                     ))}
                     <button onClick={() => { setTempProfile(profile); setIsEditingProfile(true); }}
                       style={{ width:'100%', marginTop:16, padding:'9px', background:'none', border:'1px solid rgba(0,212,255,0.3)', color:'#00d4ff', borderRadius:6, cursor:'pointer', fontSize:10, letterSpacing:'0.1em', textTransform:'uppercase' }}>
-                      ✎ Ganti Profil
+                      {t('settings.edit_profile')}
                     </button>
                   </>
                 )}
               </div>
               {/* Security */}
               <div style={{ background:'#0f0f17', border:'1px solid #1e1e2e', borderTop:'2px solid #00d4ff', borderRadius:8, padding:22, display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center' }}>
-                <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:16, paddingBottom:12, borderBottom:'1px solid #1e1e2e', width:'100%', textAlign:'left' }}>Perlindungan Akun</p>
+                <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:16, paddingBottom:12, borderBottom:'1px solid #1e1e2e', width:'100%', textAlign:'left' }}>{t('settings.security')}</p>
                 <div style={{ fontSize:36, marginBottom:8 }}>🛡️</div>
                 <p className={spaceMono.className} style={{ fontSize:36, fontWeight:700, color:'#00d4ff', marginBottom:4, lineHeight:1 }}>100%</p>
-                <p style={{ fontSize:11, color:'#64748b', marginBottom:16 }}>✓ Aman Sentosa</p>
+                <p style={{ fontSize:11, color:'#64748b', marginBottom:16 }}>{t('settings.security_ok')}</p>
                 <div style={{ height:4, width:'100%', background:'#1e1e2e', borderRadius:2, marginBottom:20, overflow:'hidden' }}>
                   <div style={{ height:'100%', width:'100%', background:'linear-gradient(90deg,#00d4ff,#10b981)', borderRadius:2 }} />
                 </div>
@@ -1240,11 +1319,37 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
               </div>
             </div>
 
+            {/* Language Preference Section */}
+            <div style={{ background:'#0f0f17', border:'1px solid #1e1e2e', borderTop:'2px solid #00d4ff', borderRadius:8, padding:22, marginBottom:16 }}>
+              <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:16, paddingBottom:12, borderBottom:'1px solid #1e1e2e' }}>{t('settings.language_section')}</p>
+              <div style={{ display:'flex', gap:10 }}>
+                {(['id', 'en'] as Lang[]).map(l => (
+                  <button
+                    key={l}
+                    onClick={() => setLang(l)}
+                    style={{
+                      flex:1, padding:'10px 16px',
+                      background: lang === l ? 'rgba(0,212,255,0.1)' : 'transparent',
+                      border: `1px solid ${lang === l ? '#00d4ff' : '#2d2d3d'}`,
+                      color: lang === l ? '#00d4ff' : '#475569',
+                      borderRadius:6, cursor:'pointer', fontSize:12,
+                      fontFamily: spaceMono.style.fontFamily, letterSpacing:'0.04em',
+                      transition:'all 0.15s',
+                      boxShadow: lang === l ? '0 0 10px rgba(0,212,255,0.2)' : 'none',
+                    }}
+                  >
+                    {l === 'id' ? t('settings.lang_id') : t('settings.lang_en')}
+                    {lang === l && <span style={{ marginLeft:6, color:'#00d4ff' }}>✓</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Transaction Form */}
             <div style={{ background:'#0f0f17', border:'1px solid #1e1e2e', borderTop:'2px solid #f59e0b', borderRadius:8, padding:28 }}>
-              <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:20, paddingBottom:12, borderBottom:'1px solid #1e1e2e' }}>Account Master · Catat Transaksi Baru</p>
+              <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:20, paddingBottom:12, borderBottom:'1px solid #1e1e2e' }}>{t('settings.tx_form_title')}</p>
               <div style={{ display:'flex', background:'#1a1a24', border:'1px solid #1e1e2e', borderRadius:6, padding:4, marginBottom:22, gap:4 }}>
-                {[{val:'DEBIT',label:'Pengeluaran / Utang',col:'#f59e0b'},{val:'CREDIT',label:'Pendapatan',col:'#10b981'}].map(btn => (
+                {[{val:'DEBIT',label:t('settings.debit_label'),col:'#f59e0b'},{val:'CREDIT',label:t('settings.credit_label'),col:'#10b981'}].map(btn => (
                   <button key={btn.val} onClick={() => setNewTxType(btn.val)}
                     style={{ flex:1, padding:'9px', background:newTxType===btn.val?`${btn.col}15`:'transparent', border:`1px solid ${newTxType===btn.val?btn.col:'transparent'}`, color:newTxType===btn.val?btn.col:'#475569', borderRadius:4, cursor:'pointer', fontSize:10, letterSpacing:'0.08em', textTransform:'uppercase', fontWeight:600, transition:'all 0.15s' }}>
                     {btn.label}
@@ -1252,18 +1357,18 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                 ))}
               </div>
               <div style={{ background:'#1a1a24', border:'1px solid #1e1e2e', borderRadius:8, padding:'16px 20px', marginBottom:20, textAlign:'center' }}>
-                <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:8 }}>Nominal (Rp)</p>
+                <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:8 }}>{t('settings.amount_label')}</p>
                 <input type="number" placeholder="0" value={newTxAmount} onChange={e => setNewTxAmount(e.target.value)}
                   style={{ width:'100%', fontSize:36, fontWeight:700, background:'transparent', border:'none', outline:'none', textAlign:'center', color:newTxType==='DEBIT'?'#f59e0b':'#10b981', fontFamily:'inherit' }} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
                 <div>
-                  <label style={{ display:'block', fontSize:9, color:'#475569', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:7 }}>Keterangan</label>
-                  <input type="text" placeholder="Contoh: Beli Kopi / Gaji" value={newTxDesc} onChange={e => setNewTxDesc(e.target.value)}
+                  <label style={{ display:'block', fontSize:9, color:'#475569', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:7 }}>{t('settings.desc_label')}</label>
+                  <input type="text" placeholder={t('settings.desc_placeholder')} value={newTxDesc} onChange={e => setNewTxDesc(e.target.value)}
                     style={{ width:'100%', background:'#1a1a24', border:'1px solid #2d2d3d', borderRadius:6, padding:'11px 14px', color:'#f8fafc', fontSize:12, outline:'none' }} />
                 </div>
                 <div>
-                  <label style={{ display:'block', fontSize:9, color:'#475569', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:7 }}>Kategori</label>
+                  <label style={{ display:'block', fontSize:9, color:'#475569', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:7 }}>{t('settings.category_label')}</label>
                   <select value={newTxCategory} onChange={e => setNewTxCategory(e.target.value)}
                     style={{ width:'100%', background:'#1a1a24', border:'1px solid #2d2d3d', borderRadius:6, padding:'11px 14px', color:'#f8fafc', fontSize:12, outline:'none', cursor:'pointer' }}>
                     {newTxType==='DEBIT'
@@ -1274,7 +1379,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
               </div>
               <button onClick={handleAddTransaction}
                 style={{ width:'100%', padding:'14px', background:'#f59e0b', color:'#000', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', letterSpacing:'0.08em', textTransform:'uppercase', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-                <span style={{ fontSize:18 }}>↵</span> Simpan &amp; Enter
+                <span style={{ fontSize:18 }}>↵</span> {t('settings.save_enter')}
               </button>
             </div>
           </div>
@@ -1292,30 +1397,30 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
             padding:16, boxShadow:'0 0 30px rgba(0,212,255,0.15)',
           }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-              <span className={spaceMono.className} style={{ fontSize:10, color:'#00d4ff', letterSpacing:'0.1em' }}>⚡ QUICK RECORD</span>
-              <span style={{ fontSize:8, color:'#334155', letterSpacing:'0.1em' }}>E-WALLET TRACKER</span>
+              <span className={spaceMono.className} style={{ fontSize:10, color:'#00d4ff', letterSpacing:'0.1em' }}>{t('fab.quick_record')}</span>
+              <span style={{ fontSize:8, color:'#334155', letterSpacing:'0.1em' }}>{t('fab.ewallet')}</span>
             </div>
             {/* DEBIT / CREDIT toggle */}
             <div style={{ display:'flex', background:'#1a1a24', borderRadius:6, padding:3, gap:3, marginBottom:12 }}>
-              {(['DEBIT','CREDIT'] as const).map(t => (
-                <button key={t} onClick={() => setFabType(t)} style={{
-                  flex:1, padding:'6px 0', border:`1px solid ${fabType===t?(t==='DEBIT'?'#f59e0b':'#10b981'):'transparent'}`,
-                  background: fabType===t ? (t==='DEBIT'?'rgba(245,158,11,0.15)':'rgba(16,185,129,0.15)') : 'transparent',
-                  color: fabType===t ? (t==='DEBIT'?'#f59e0b':'#10b981') : '#475569',
+              {(['DEBIT','CREDIT'] as const).map(txType => (
+                <button key={txType} onClick={() => setFabType(txType)} style={{
+                  flex:1, padding:'6px 0', border:`1px solid ${fabType===txType?(txType==='DEBIT'?'#f59e0b':'#10b981'):'transparent'}`,
+                  background: fabType===txType ? (txType==='DEBIT'?'rgba(245,158,11,0.15)':'rgba(16,185,129,0.15)') : 'transparent',
+                  color: fabType===txType ? (txType==='DEBIT'?'#f59e0b':'#10b981') : '#475569',
                   borderRadius:4, cursor:'pointer', fontSize:10, letterSpacing:'0.08em',
                   fontFamily: spaceMono.style.fontFamily, fontWeight:700,
-                }}>{t==='DEBIT'?'− KELUAR':'+ MASUK'}</button>
+                }}>{txType==='DEBIT' ? t('fab.debit') : t('fab.credit')}</button>
               ))}
             </div>
             {/* Amount */}
             <input
-              type="number" placeholder="Nominal (Rp)"
+              type="number" placeholder={t('fab.amount')}
               value={fabAmount} onChange={e => setFabAmount(e.target.value)}
               style={{ width:'100%', marginBottom:8, background:'#1a1a24', border:'1px solid #2d2d3d', borderRadius:6, padding:'9px 12px', color: fabType==='DEBIT'?'#f59e0b':'#10b981', fontSize:16, fontWeight:700, outline:'none', textAlign:'center', boxSizing:'border-box' }}
             />
             {/* Description */}
             <input
-              type="text" placeholder="Keterangan..."
+              type="text" placeholder={t('fab.desc')}
               value={fabDesc} onChange={e => setFabDesc(e.target.value)}
               onKeyDown={e => e.key==='Enter' && handleFabRecord()}
               style={{ width:'100%', marginBottom:8, background:'#1a1a24', border:'1px solid #2d2d3d', borderRadius:6, padding:'8px 12px', color:'#f8fafc', fontSize:11, outline:'none', boxSizing:'border-box' }}
@@ -1337,7 +1442,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
               background: fabType==='DEBIT'?'#f59e0b':'#10b981',
               color:'#000', fontWeight:700, fontSize:12, cursor:'pointer',
               letterSpacing:'0.08em', fontFamily: spaceMono.style.fontFamily,
-            }}>CATAT ↓</button>
+            }}>{t('fab.save')}</button>
           </div>
         )}
         {/* FAB button */}

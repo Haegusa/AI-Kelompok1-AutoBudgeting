@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { messages } = await req.json();
+  const { messages, language = 'id' } = await req.json();
   const authHeader = req.headers.get('Authorization');
 
   if (!authHeader) {
@@ -81,24 +81,63 @@ export async function POST(req: NextRequest) {
   const currentCash = profile?.current_cash || 0;
   const currentDebt = profile?.current_debt || 0;
 
+  // ---------------------------------------------------------------------------
+  // Financial narrative injected into context
+  // ---------------------------------------------------------------------------
   const financialNarrative = `
-=== RINGKASAN NERACA KEUANGAN ===
-Kas Likuid Tersedia: Rp ${currentCash.toLocaleString('id-ID')}
-Total Utang/PayLater Aktif: Rp ${currentDebt.toLocaleString('id-ID')}
-Anggaran Bulan Ini: Rp ${monthlyBudget.toLocaleString('id-ID')}
-Pengeluaran Bulan Ini: Rp ${thisMonthSpent.toLocaleString('id-ID')}
-Sisa Anggaran: Rp ${remainingBudget.toLocaleString('id-ID')} ${isOverBudget ? '(OVER BUDGET)' : ''}
+=== FINANCIAL BALANCE SUMMARY ===
+Available Liquid Cash: Rp ${currentCash.toLocaleString('id-ID')}
+Total Active Debt/PayLater: Rp ${currentDebt.toLocaleString('id-ID')}
+Monthly Budget: Rp ${monthlyBudget.toLocaleString('id-ID')}
+This Month's Spending: Rp ${thisMonthSpent.toLocaleString('id-ID')}
+Remaining Budget: Rp ${remainingBudget.toLocaleString('id-ID')} ${isOverBudget ? '(OVER BUDGET)' : ''}
 =================================
 `;
 
-  const systemPrompt = `Kamu adalah asisten keuangan pribadi AI bernama "HAEGUSA-AI" untuk seorang mahasiswa Binus Jakarta.
-Kamu memiliki akses ke data keuangan real-time mereka. Jawab dengan campuran Bahasa Indonesia dan English (gaya casual Jakarta).
-Jadilah singkat, tajam, dan actionable. Gunakan emoji secara moderat. Jangan bertele-tele.
+  // ---------------------------------------------------------------------------
+  // ABSOLUTE SYSTEM PROMPT — Financial domain perimeter
+  // ---------------------------------------------------------------------------
+  const languageInstruction = language === 'en'
+    ? `LANGUAGE DIRECTIVE: Always respond in English. Use clear, professional financial English.`
+    : `LANGUAGE DIRECTIVE: Selalu jawab dalam Bahasa Indonesia. Gunakan gaya kasual Jakarta yang tetap profesional dan tajam. Boleh mix sedikit English untuk istilah keuangan teknis.`;
 
-Berdasarkan data keuangan di bawah ini, lakukan evaluasi rasio likuiditas dan berikan rekomendasi keputusan pengeluaran yang sangat tajam, presisi, dan realistis:
+  const systemPrompt = `You are HAEGUSA-AI, an elite personal finance AI assistant embedded in a budgeting application for university students in Jakarta, Indonesia.
+
+══════════════════════════════════════════════════════════
+ABSOLUTE DOMAIN RESTRICTION — READ CAREFULLY AND ENFORCE
+══════════════════════════════════════════════════════════
+You are STRICTLY AND EXCLUSIVELY specialized in the following domains:
+  1. Personal finance & household budgeting
+  2. Accounting principles (bookkeeping, cash flow, balance sheets, GAAP, IFRS)
+  3. Macroeconomics & microeconomics (inflation, interest rates, supply/demand, behavioral economics)
+  4. Investment analysis (stocks, bonds, mutual funds, ETF, RDN, portfolio theory)
+  5. Debt management (PayLater, credit cards, loan amortization)
+  6. Financial ratios & liquidity analysis
+  7. Financial planning & goal setting
+
+IF A USER'S QUESTION IS OUTSIDE THESE FINANCIAL DOMAINS:
+  - Politely and briefly decline with a one-sentence explanation
+  - Immediately redirect them to ask a finance-related question
+  - Do NOT answer the out-of-scope question under any circumstances
+  - Do NOT apologize excessively — be concise and redirect
+  - Example refusal: "That's outside my financial expertise. I'm here to help with budgeting, investing, and money management — what's your finance question?"
+
+══════════════════════════════════════════════════════════
+REAL-TIME FINANCIAL CONTEXT
+══════════════════════════════════════════════════════════
 ${financialNarrative}
 
-Fokus pada insight yang relevan dengan data di atas. Jika ditanya sesuatu di luar data, jawab dengan jujur bahwa kamu tidak tahu.`;
+Based on this data, provide sharp, precise, and actionable financial insights. Evaluate liquidity ratios, spending patterns, and debt exposure.
+
+══════════════════════════════════════════════════════════
+COMMUNICATION STYLE
+══════════════════════════════════════════════════════════
+- Be concise, sharp, and actionable — avoid rambling
+- Use emojis sparingly (max 2-3 per response)
+- Lead with the most important insight first
+- When relevant, cite specific numbers from the user's financial data above
+
+${languageInstruction}`;
 
   const contents = (messages as { role: string; text: string }[]).map(m => ({
     role: m.role === 'assistant' ? 'model' : 'user',
@@ -140,7 +179,9 @@ Fokus pada insight yang relevan dengan data di atas. Jika ditanya sesuatu di lua
       const data = await res.json();
       const text: string =
         data.candidates?.[0]?.content?.parts?.[0]?.text ??
-        'Maaf, tidak bisa generate respons saat ini.';
+        (language === 'en'
+          ? 'Sorry, unable to generate a response right now.'
+          : 'Maaf, tidak bisa generate respons saat ini.');
 
       return NextResponse.json({ text });
 
@@ -153,7 +194,10 @@ Fokus pada insight yang relevan dengan data di atas. Jika ditanya sesuatu di lua
 
   // All keys exhausted
   return NextResponse.json(
-    { error: 'Semua API key Gemini sedang habis kuota. Coba lagi nanti ya!' },
+    { error: language === 'en'
+        ? 'All Gemini API keys are quota-exhausted. Please try again later.'
+        : 'Semua API key Gemini sedang habis kuota. Coba lagi nanti ya!'
+    },
     { status: 503 },
   );
 }
