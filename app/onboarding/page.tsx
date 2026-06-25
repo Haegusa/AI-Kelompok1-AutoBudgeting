@@ -14,22 +14,20 @@ export default function OnboardingPage() {
   const [debt, setDebt] = useState('');
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
-    // Check if user is already onboarded
     const checkStatus = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.replace('/');
-        return;
-      }
-      
+      if (!session) { router.replace('/'); return; }
+
       const { data: profile } = await supabase
         .from('profiles')
         .select('is_onboarded')
         .eq('id', session.user.id)
         .single();
-        
+
       if (profile?.is_onboarded) {
         router.replace('/');
       } else {
@@ -40,96 +38,164 @@ export default function OnboardingPage() {
   }, [router]);
 
   const handleSave = async (isSkip: boolean = false) => {
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    // Input validation — reject negative values
+    if (!isSkip) {
+      const parsedCash = parseFloat(cash);
+      const parsedDebt = parseFloat(debt);
+      if (cash !== '' && (isNaN(parsedCash) || parsedCash < 0)) {
+        setErrorMsg('Jumlah kas tidak valid. Masukkan angka positif.');
+        return;
+      }
+      if (debt !== '' && (isNaN(parsedDebt) || parsedDebt < 0)) {
+        setErrorMsg('Jumlah utang tidak valid. Masukkan angka positif.');
+        return;
+      }
+    }
+
     setLoading(true);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
 
-    const finalCash = isSkip ? 0 : (parseFloat(cash) || 0);
-    const finalDebt = isSkip ? 0 : (parseFloat(debt) || 0);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setErrorMsg('Sesi tidak ditemukan. Silakan login ulang.');
+        setLoading(false);
+        return;
+      }
 
-    // Update profile
-    await supabase
-      .from('profiles')
-      .update({
-        current_cash: finalCash,
-        current_debt: finalDebt, // Assuming current_debt exists in profiles
-        is_onboarded: true
-      })
-      .eq('id', session.user.id);
-      
-    // Redirect to dashboard (home)
-    router.replace('/');
+      const finalCash = isSkip ? 0 : (parseFloat(cash) || 0);
+      const finalDebt = isSkip ? 0 : (parseFloat(debt) || 0);
+
+      // Attempt full update (cash + debt + onboarded flag)
+      const { error: fullError } = await supabase
+        .from('profiles')
+        .update({ current_cash: finalCash, current_debt: finalDebt, is_onboarded: true })
+        .eq('id', session.user.id);
+
+      if (fullError) {
+        // Fault-tolerant fallback: update without current_debt (column may not exist yet)
+        const { error: fallbackError } = await supabase
+          .from('profiles')
+          .update({ current_cash: finalCash, is_onboarded: true })
+          .eq('id', session.user.id);
+
+        if (fallbackError) {
+          setErrorMsg(`Gagal menyimpan: ${fallbackError.message}`);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Only redirect AFTER confirmed success
+      setSuccessMsg('Data tersimpan! Mengarahkan ke dasbor...');
+      setTimeout(() => router.replace('/'), 800);
+
+    } catch (err: any) {
+      setErrorMsg(`Kesalahan jaringan: ${err?.message ?? 'Unknown error'}`);
+      setLoading(false);
+    }
   };
 
   if (initializing) {
-    return <div className="min-h-screen bg-[#070710] flex items-center justify-center">
-      <div className="w-10 h-10 border-4 border-[#00d4ff]/30 border-t-[#00d4ff] rounded-full animate-spin"></div>
-    </div>;
+    return (
+      <div style={{ minHeight:'100vh', background:'#070710', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <div style={{ width:40, height:40, border:'4px solid rgba(0,212,255,0.3)', borderTop:'4px solid #00d4ff', borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />
+        <style>{`@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}`}</style>
+      </div>
+    );
   }
 
   return (
-    <div className={`${dmSans.className} min-h-screen bg-[#070710] text-[#e2e8f0] flex flex-col items-center justify-center p-4`}>
-      <div className="w-full max-w-md bg-[#111827] border border-[#00d4ff]/20 rounded-2xl p-8 shadow-[0_0_40px_rgba(0,212,255,0.1)]">
-        
-        <div className="flex items-center justify-center mb-6">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#00d4ff] to-[#0066ff] flex items-center justify-center shadow-[0_0_20px_rgba(0,212,255,0.5)]">
-            <span className={`${spaceMono.className} text-xl font-bold text-[#070710]`}>B</span>
+    <div className={dmSans.className} style={{ minHeight:'100vh', background:'#070710', color:'#e2e8f0', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:16 }}>
+      <div style={{ width:'100%', maxWidth:448, background:'#111827', border:'1px solid rgba(0,212,255,0.2)', borderRadius:16, padding:32, boxShadow:'0 0 40px rgba(0,212,255,0.1)' }}>
+
+        {/* Logo */}
+        <div style={{ display:'flex', justifyContent:'center', marginBottom:24 }}>
+          <div style={{ width:48, height:48, borderRadius:12, background:'linear-gradient(135deg,#00d4ff,#0066ff)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 20px rgba(0,212,255,0.5)' }}>
+            <span className={spaceMono.className} style={{ fontSize:20, fontWeight:700, color:'#070710' }}>B</span>
           </div>
         </div>
-        
-        <h1 className={`${spaceMono.className} text-2xl font-bold text-center text-[#00d4ff] mb-2`}>
+
+        <h1 className={spaceMono.className} style={{ fontSize:24, fontWeight:700, textAlign:'center', color:'#00d4ff', marginBottom:8 }}>
           Welcome to BudgetOS
         </h1>
-        <p className="text-sm text-center text-slate-400 mb-8">
+        <p style={{ fontSize:14, textAlign:'center', color:'#94a3b8', marginBottom:32 }}>
           Mari siapkan akunmu sebelum mulai.
         </p>
 
-        <div className="space-y-6">
+        {/* Error message */}
+        {errorMsg && (
+          <div style={{ background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.4)', borderRadius:8, padding:'10px 14px', marginBottom:16, fontSize:13, color:'#ef4444', lineHeight:1.5 }}>
+            ⚠ {errorMsg}
+          </div>
+        )}
+
+        {/* Success message */}
+        {successMsg && (
+          <div style={{ background:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.4)', borderRadius:8, padding:'10px 14px', marginBottom:16, fontSize:13, color:'#10b981', lineHeight:1.5 }}>
+            ✓ {successMsg}
+          </div>
+        )}
+
+        <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
+
+          {/* Cash input */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label style={{ display:'block', fontSize:14, fontWeight:500, color:'#cbd5e1', marginBottom:8 }}>
               Berapa total kas/uang liquidmu saat ini?
             </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">Rp</span>
-              <input 
-                type="number"
-                className="w-full bg-[#0d1a2e] border border-[#00d4ff]/20 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-[#00d4ff] focus:ring-1 focus:ring-[#00d4ff] transition-all"
-                placeholder="0"
+            <div style={{ position:'relative' }}>
+              <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#94a3b8' }}>Rp</span>
+              <input
+                id="onboarding-cash"
+                type="number" min="0" placeholder="0"
                 value={cash}
-                onChange={e => setCash(e.target.value)}
+                disabled={loading}
+                onChange={e => { setCash(e.target.value); setErrorMsg(''); }}
+                onFocus={e => e.target.style.borderColor='#00d4ff'}
+                onBlur={e => e.target.style.borderColor='rgba(0,212,255,0.2)'}
+                style={{ width:'100%', background:'#0d1a2e', border:'1px solid rgba(0,212,255,0.2)', borderRadius:12, padding:'12px 16px 12px 40px', color:'#fff', fontSize:14, outline:'none', boxSizing:'border-box', transition:'border-color 0.2s' }}
               />
             </div>
           </div>
 
+          {/* Debt input */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label style={{ display:'block', fontSize:14, fontWeight:500, color:'#cbd5e1', marginBottom:8 }}>
               Apakah ada saldo utang/Paylater aktif?
             </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">Rp</span>
-              <input 
-                type="number"
-                className="w-full bg-[#0d1a2e] border border-[#ff4466]/20 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-[#ff4466] focus:ring-1 focus:ring-[#ff4466] transition-all"
-                placeholder="0"
+            <div style={{ position:'relative' }}>
+              <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#94a3b8' }}>Rp</span>
+              <input
+                id="onboarding-debt"
+                type="number" min="0" placeholder="0"
                 value={debt}
-                onChange={e => setDebt(e.target.value)}
+                disabled={loading}
+                onChange={e => { setDebt(e.target.value); setErrorMsg(''); }}
+                onFocus={e => e.target.style.borderColor='#ff4466'}
+                onBlur={e => e.target.style.borderColor='rgba(255,68,102,0.2)'}
+                style={{ width:'100%', background:'#0d1a2e', border:'1px solid rgba(255,68,102,0.2)', borderRadius:12, padding:'12px 16px 12px 40px', color:'#fff', fontSize:14, outline:'none', boxSizing:'border-box', transition:'border-color 0.2s' }}
               />
             </div>
           </div>
 
-          <div className="pt-4 flex flex-col gap-3">
+          {/* Buttons */}
+          <div style={{ display:'flex', flexDirection:'column', gap:12, paddingTop:8 }}>
             <button
+              id="onboarding-save-btn"
               onClick={() => handleSave(false)}
               disabled={loading}
-              className="w-full bg-[#00d4ff] hover:bg-[#00b8e6] text-[#070710] font-bold py-3 rounded-xl transition-all shadow-[0_0_20px_rgba(0,212,255,0.3)] hover:shadow-[0_0_30px_rgba(0,212,255,0.5)] disabled:opacity-50 cursor-pointer"
+              style={{ width:'100%', background: loading?'rgba(0,212,255,0.4)':'#00d4ff', color:'#070710', fontWeight:700, padding:'12px 0', borderRadius:12, border:'none', cursor:loading?'not-allowed':'pointer', fontSize:15, boxShadow:'0 0 20px rgba(0,212,255,0.3)', transition:'all 0.2s' }}
             >
               {loading ? 'Menyimpan...' : 'Simpan & Mulai'}
             </button>
-            
             <button
+              id="onboarding-skip-btn"
               onClick={() => handleSave(true)}
               disabled={loading}
-              className="w-full bg-transparent border border-slate-700 hover:bg-slate-800 text-slate-400 font-medium py-3 rounded-xl transition-all disabled:opacity-50 cursor-pointer"
+              style={{ width:'100%', background:'transparent', border:'1px solid #334155', color:'#64748b', fontWeight:500, padding:'12px 0', borderRadius:12, cursor:loading?'not-allowed':'pointer', fontSize:14, transition:'all 0.2s' }}
             >
               Lewati, mulai dari Rp 0
             </button>
@@ -139,3 +205,4 @@ export default function OnboardingPage() {
     </div>
   );
 }
+

@@ -545,7 +545,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
           <div>
 
             {/* GREETING HEADER */}
-            <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-4 mb-6">
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-start', justifyContent:'space-between', gap:16, marginBottom:24 }}>
               <div style={{ minWidth:0, maxWidth:'100%' }}>
                 <p className={spaceMono.className} style={{ fontSize:11, color:'#475569', letterSpacing:'0.12em', marginBottom:5 }}>
                   {t('dashboard.greeting_prefix')} {t(`greeting.${greeting}`)}
@@ -870,7 +870,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                 if (isEditing) {
                   return (
                     <div key={trx.id} style={{ background:'#0f0f17', border:'1px solid rgba(0,212,255,0.4)', borderRadius:8, padding:20 }}>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                      <div style={{ display:'flex', flexDirection:'column', gap:12, marginBottom:16 }}>
                         {[
                           { label: t('history.desc_label'),   type:'text',   val:editingTx.description, key:'description' },
                           { label: t('history.amount_label'), type:'number', val:editingTx.amount,       key:'amount'      },
@@ -968,7 +968,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
             </div>
 
             {/* ── ALLOCATION BREAKDOWN DONUT ── */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+            <div style={{ display:'flex', flexDirection:'column', gap:12, marginBottom:16 }}>
               <div style={{ background:'#0f0f17', border:'1px solid #1e1e2e', borderRadius:8, padding:'18px 20px', transition:'all 0.2s' }}
                 onMouseEnter={e => { const el=e.currentTarget as HTMLDivElement; el.style.borderColor='#2d2d3d'; el.style.boxShadow='0 8px 28px rgba(0,0,0,0.3)'; }}
                 onMouseLeave={e => { const el=e.currentTarget as HTMLDivElement; el.style.borderColor='#1e1e2e'; el.style.boxShadow='none'; }}
@@ -1086,7 +1086,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                       <em style={{ color:'#f59e0b' }}>disonansi kognitif</em>: memegang kas besar (<span style={{ color:'#00d4ff', fontWeight:700 }}>Rp {currentCash.toLocaleString('id-ID')}</span>) namun mengakumulasi{' '}
                       <em>Accounts Payable</em> / PayLater berbunga tinggi (<span style={{ color:'#ef4444', fontWeight:700 }}>Rp {fin.paylaterDebt.toLocaleString('id-ID')}</span>) untuk pengeluaran non-produktif. Segera rekapitalisasi utang tersebut.
                     </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                    <div style={{ display:'flex', flexDirection:'column', gap:12, marginBottom:16 }}>
                       <div style={{ background:'#13131c', border:'1px solid #1e1e2e', padding:'12px 14px', borderRadius:4, transition:'all 0.2s' }}
                         onMouseEnter={e => { const el=e.currentTarget as HTMLDivElement; el.style.borderColor='#ef4444'; el.style.boxShadow='0 0 16px rgba(239,68,68,0.2)'; }}
                         onMouseLeave={e => { const el=e.currentTarget as HTMLDivElement; el.style.borderColor='#1e1e2e'; el.style.boxShadow='none'; }}
@@ -1241,7 +1241,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
           <div>
             <h2 className={spaceMono.className} style={{ fontSize:18, fontWeight:700, color:'#f8fafc', marginBottom:6 }}>{t('settings.title')}</h2>
             <p style={{ fontSize:11, color:'#475569', marginBottom:28, letterSpacing:'0.06em' }}>{t('settings.subtitle')}</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-7">
+            <div style={{ display:'flex', flexDirection:'column', gap:16, marginBottom:28 }}>
               {/* Profile */}
               <div style={{ background:'#0f0f17', border:'1px solid #1e1e2e', borderTop:'2px solid #7b61ff', borderRadius:8, padding:22 }}>
                 <p style={{ fontSize:9, color:'#475569', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:16, paddingBottom:12, borderBottom:'1px solid #1e1e2e' }}>{t('settings.profile')}</p>
@@ -1361,7 +1361,7 @@ export default function BinusianMonthlyBudgeting({ user }: { user?: User | null 
                 <input type="number" placeholder="0" value={newTxAmount} onChange={e => setNewTxAmount(e.target.value)}
                   style={{ width:'100%', fontSize:36, fontWeight:700, background:'transparent', border:'none', outline:'none', textAlign:'center', color:newTxType==='DEBIT'?'#f59e0b':'#10b981', fontFamily:'inherit' }} />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+              <div style={{ display:'flex', flexDirection:'column', gap:16, marginBottom:20 }}>
                 <div>
                   <label style={{ display:'block', fontSize:9, color:'#475569', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:7 }}>{t('settings.desc_label')}</label>
                   <input type="text" placeholder={t('settings.desc_placeholder')} value={newTxDesc} onChange={e => setNewTxDesc(e.target.value)}

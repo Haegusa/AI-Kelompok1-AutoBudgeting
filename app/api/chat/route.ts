@@ -75,24 +75,47 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const monthlyBudget = 1000000;
-  const remainingBudget = monthlyBudget - thisMonthSpent;
-  const isOverBudget = remainingBudget < 0;
-  const currentCash = profile?.current_cash || 0;
-  const currentDebt = profile?.current_debt || 0;
+  // ---------------------------------------------------------------------------
+  // Pre-calculate financial ratios for AI context
+  // ---------------------------------------------------------------------------
+  const debtToCashRatio   = currentCash > 0 ? (currentDebt / currentCash) : (currentDebt > 0 ? 99 : 0);
+  const budgetBurnRate    = monthlyBudget > 0 ? (thisMonthSpent / monthlyBudget) : 0;
+  const liquidityCoverage = currentDebt > 0 ? (currentCash / currentDebt) : 99;
+
+  // Determine risk tier based on ratios
+  let riskLevel: 'CRITICAL' | 'HIGH' | 'MODERATE' | 'LOW';
+  if (debtToCashRatio > 0.8 || budgetBurnRate > 1.2 || liquidityCoverage < 0.5) {
+    riskLevel = 'CRITICAL';
+  } else if (debtToCashRatio > 0.5 || budgetBurnRate > 0.9 || liquidityCoverage < 1.0) {
+    riskLevel = 'HIGH';
+  } else if (debtToCashRatio > 0.3 || budgetBurnRate > 0.7) {
+    riskLevel = 'MODERATE';
+  } else {
+    riskLevel = 'LOW';
+  }
+
+  const riskColor = { CRITICAL: '🔴', HIGH: '🟠', MODERATE: '🟡', LOW: '🟢' }[riskLevel];
 
   // ---------------------------------------------------------------------------
   // Financial narrative injected into context
   // ---------------------------------------------------------------------------
   const financialNarrative = `
 === FINANCIAL BALANCE SUMMARY ===
-Available Liquid Cash: Rp ${currentCash.toLocaleString('id-ID')}
-Total Active Debt/PayLater: Rp ${currentDebt.toLocaleString('id-ID')}
-Monthly Budget: Rp ${monthlyBudget.toLocaleString('id-ID')}
-This Month's Spending: Rp ${thisMonthSpent.toLocaleString('id-ID')}
-Remaining Budget: Rp ${remainingBudget.toLocaleString('id-ID')} ${isOverBudget ? '(OVER BUDGET)' : ''}
+Available Liquid Cash      : Rp ${currentCash.toLocaleString('id-ID')}
+Total Active Debt/PayLater : Rp ${currentDebt.toLocaleString('id-ID')}
+Monthly Budget             : Rp ${monthlyBudget.toLocaleString('id-ID')}
+This Month's Spending      : Rp ${thisMonthSpent.toLocaleString('id-ID')}
+Remaining Budget           : Rp ${remainingBudget.toLocaleString('id-ID')} ${isOverBudget ? '(OVER BUDGET ⚠)' : ''}
+
+=== PRE-CALCULATED RISK RATIOS ===
+Debt-to-Cash Ratio         : ${debtToCashRatio.toFixed(2)} ${debtToCashRatio > 0.8 ? '⚠ DANGER' : debtToCashRatio > 0.5 ? '⚠ HIGH' : '✓ OK'}
+Budget Burn Rate           : ${(budgetBurnRate * 100).toFixed(1)}% ${budgetBurnRate > 1 ? '⚠ OVER BUDGET' : budgetBurnRate > 0.9 ? '⚠ NEAR LIMIT' : '✓ OK'}
+Liquidity Coverage Ratio   : ${liquidityCoverage === 99 ? 'N/A (no debt)' : liquidityCoverage.toFixed(2) + (liquidityCoverage < 1 ? ' ⚠ DANGER — cash cannot cover debt' : ' ✓ OK')}
+
+${riskColor} OVERALL RISK LEVEL: ${riskLevel}
 =================================
 `;
+
 
   // ---------------------------------------------------------------------------
   // ABSOLUTE SYSTEM PROMPT — Financial domain perimeter
@@ -123,11 +146,14 @@ IF A USER'S QUESTION IS OUTSIDE THESE FINANCIAL DOMAINS:
   - Example refusal: "That's outside my financial expertise. I'm here to help with budgeting, investing, and money management — what's your finance question?"
 
 ══════════════════════════════════════════════════════════
-REAL-TIME FINANCIAL CONTEXT
+REAL-TIME FINANCIAL CONTEXT & RISK ANALYSIS
 ══════════════════════════════════════════════════════════
 ${financialNarrative}
 
-Based on this data, provide sharp, precise, and actionable financial insights. Evaluate liquidity ratios, spending patterns, and debt exposure.
+CRITICAL DIRECTIVE ON RISK LEVELS:
+- If OVERALL RISK LEVEL is "CRITICAL" or "HIGH", and the user asks about buying non-essential items (e.g., coffee equipment, games) or making high-risk investments (e.g., stocks/IHSG), you MUST proactively warn them before answering.
+- Cite their Debt-to-Cash Ratio or Liquidity Coverage Ratio in your warning.
+- Example: "Sebelum bahas saham IHSG, liquidity coverage kamu bahaya banget di bawah 1. Utang PayLater kamu lebih besar dari kas liquid. Beresin utang dulu sebelum mikir investasi."
 
 ══════════════════════════════════════════════════════════
 COMMUNICATION STYLE
